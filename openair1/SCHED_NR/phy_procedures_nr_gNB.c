@@ -45,8 +45,8 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <ran_context.h>
-//#define DEBUG_RXDATA
-// #define SRS_IND_DEBUG
+// #define DEBUG_RXDATA
+//  #define SRS_IND_DEBUG
 
 int nums = 0;
 
@@ -85,10 +85,10 @@ void nr_common_signal_procedures(PHY_VARS_gNB *gNB, int frame, int slot, nfapi_n
   NR_DL_FRAME_PARMS *fp = &gNB->frame_parms;
   nfapi_nr_dl_tti_ssb_pdu_rel15_t *pdu = &ssb_pdu.ssb_pdu_rel15;
   uint8_t ssb_index = pdu->SsbBlockIndex;
-  LOG_D(PHY,"common_signal_procedures: frame %d, slot %d ssb index %d\n", frame, slot, ssb_index);
+  LOG_D(PHY, "common_signal_procedures: frame %d, slot %d ssb index %d\n", frame, slot, ssb_index);
 
   int ssb_start_symbol_abs = nr_get_ssb_start_symbol(fp, ssb_index); // computing the starting symbol for current ssb
-  uint16_t ssb_start_symbol = ssb_start_symbol_abs % fp->symbols_per_slot;  // start symbol wrt slot
+  uint16_t ssb_start_symbol = ssb_start_symbol_abs % fp->symbols_per_slot; // start symbol wrt slot
 
   // Setting the first subcarrier
   // 3GPP TS 38.211 sections 7.4.3.1 and 4.4.4.2
@@ -130,7 +130,7 @@ void nr_common_signal_procedures(PHY_VARS_gNB *gNB, int frame, int slot, nfapi_n
         scs,
         fp->ssb_start_subcarrier);
 
-  LOG_D(PHY,"SS TX: frame %d, slot %d, start_symbol %d\n", frame, slot, ssb_start_symbol);
+  LOG_D(PHY, "SS TX: frame %d, slot %d, start_symbol %d\n", frame, slot, ssb_start_symbol);
   nfapi_nr_tx_precoding_and_beamforming_t *pb = &pdu->precoding_and_beamforming;
   c16_t ***txdataF = gNB->common_vars.txdataF;
   int txdataF_offset = slot * fp->samples_per_slot_wCP;
@@ -166,14 +166,7 @@ void nr_common_signal_procedures(PHY_VARS_gNB *gNB, int frame, int slot, nfapi_n
   }
 #endif
 
-  nr_generate_pbch(gNB,
-                   &ssb_pdu,
-                   &txdataF[beam_nb][0][txdataF_offset],
-                   ssb_start_symbol,
-                   n_hf,
-                   frame,
-                   cfg,
-                   fp);
+  nr_generate_pbch(gNB, &ssb_pdu, &txdataF[beam_nb][0][txdataF_offset], ssb_start_symbol, n_hf, frame, cfg, fp);
 }
 
 // clearing beam information to be provided to RU for all slots (DL and UL)
@@ -187,10 +180,7 @@ void clear_slot_beamid(PHY_VARS_gNB *gNB, int slot)
   }
 }
 
-void phy_procedures_gNB_TX(processingData_L1tx_t *msgTx,
-                           int frame,
-                           int slot,
-                           int do_meas)
+void phy_procedures_gNB_TX(processingData_L1tx_t *msgTx, int frame, int slot, int do_meas)
 {
   PHY_VARS_gNB *gNB = msgTx->gNB;
   NR_DL_FRAME_PARMS *fp = &gNB->frame_parms;
@@ -199,7 +189,7 @@ void phy_procedures_gNB_TX(processingData_L1tx_t *msgTx,
   int txdataF_offset = slot * fp->samples_per_slot_wCP;
   prs_config_t *prs_config = NULL;
 
-  if ((cfg->cell_config.frame_duplex_type.value == TDD) && (nr_slot_select(cfg,frame,slot) == NR_UPLINK_SLOT))
+  if ((cfg->cell_config.frame_duplex_type.value == TDD) && (nr_slot_select(cfg, frame, slot) == NR_UPLINK_SLOT))
     return;
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_gNB_TX + gNB->CC_id, 1);
@@ -212,21 +202,21 @@ void phy_procedures_gNB_TX(processingData_L1tx_t *msgTx,
   }
 
   // Check for PRS slot - section 7.4.1.7.4 in 3GPP rel16 38.211
-  for(int rsc_id = 0; rsc_id < gNB->prs_vars.NumPRSResources; rsc_id++)
-  {
+  for (int rsc_id = 0; rsc_id < gNB->prs_vars.NumPRSResources; rsc_id++) {
     prs_config = &gNB->prs_vars.prs_cfg[rsc_id];
-    for (int i = 0; i < prs_config->PRSResourceRepetition; i++)
-    {
-      if( (((frame*fp->slots_per_frame + slot) - (prs_config->PRSResourceSetPeriod[1] + prs_config->PRSResourceOffset)+prs_config->PRSResourceSetPeriod[0])%prs_config->PRSResourceSetPeriod[0]) == i*prs_config->PRSResourceTimeGap )
-      {
-        slot_prs = (slot - i*prs_config->PRSResourceTimeGap + fp->slots_per_frame)%fp->slots_per_frame;
-        LOG_D(PHY,"gNB_TX: frame %d, slot %d, slot_prs %d, PRS Resource ID %d\n",frame, slot, slot_prs, rsc_id);
+    for (int i = 0; i < prs_config->PRSResourceRepetition; i++) {
+      if ((((frame * fp->slots_per_frame + slot) - (prs_config->PRSResourceSetPeriod[1] + prs_config->PRSResourceOffset)
+            + prs_config->PRSResourceSetPeriod[0])
+           % prs_config->PRSResourceSetPeriod[0])
+          == i * prs_config->PRSResourceTimeGap) {
+        slot_prs = (slot - i * prs_config->PRSResourceTimeGap + fp->slots_per_frame) % fp->slots_per_frame;
+        LOG_D(PHY, "gNB_TX: frame %d, slot %d, slot_prs %d, PRS Resource ID %d\n", frame, slot, slot_prs, rsc_id);
         nr_generate_prs(slot_prs, &gNB->common_vars.txdataF[0][0][txdataF_offset], AMP, prs_config, cfg, fp);
       }
     }
   }
 
-  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_gNB_COMMON_TX,1);
+  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_gNB_COMMON_TX, 1);
   for (int i = 0; i < fp->Lmax; i++) {
     if (msgTx->ssb[i].active) {
       nr_common_signal_procedures(gNB, frame, slot, msgTx->ssb[i].ssb_pdu);
@@ -234,44 +224,47 @@ void phy_procedures_gNB_TX(processingData_L1tx_t *msgTx,
     }
   }
 
-  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_gNB_COMMON_TX,0);
+  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_gNB_COMMON_TX, 0);
 
   int num_pdcch_pdus = msgTx->num_ul_pdcch + msgTx->num_dl_pdcch;
 
   if (num_pdcch_pdus > 0) {
-    LOG_D(PHY, "[gNB %d] Frame %d slot %d Calling nr_generate_dci_top (number of UL/DL PDCCH PDUs %d/%d)\n",
-	  gNB->Mod_id, frame, slot, msgTx->num_ul_pdcch, msgTx->num_dl_pdcch);
-  
-    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_gNB_PDCCH_TX,1);
+    LOG_D(PHY,
+          "[gNB %d] Frame %d slot %d Calling nr_generate_dci_top (number of UL/DL PDCCH PDUs %d/%d)\n",
+          gNB->Mod_id,
+          frame,
+          slot,
+          msgTx->num_ul_pdcch,
+          msgTx->num_dl_pdcch);
+
+    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_gNB_PDCCH_TX, 1);
 
     nr_generate_dci_top(msgTx, slot, txdataF_offset);
 
-    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_gNB_PDCCH_TX,0);
+    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_gNB_PDCCH_TX, 0);
   }
   msgTx->num_dl_pdcch = 0;
   msgTx->num_ul_pdcch = 0;
- 
+
   if (msgTx->num_pdsch_slot > 0) {
-    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_GENERATE_DLSCH,1);
-    LOG_D(PHY, "PDSCH generation started (%d) in frame %d.%d\n", msgTx->num_pdsch_slot,frame,slot);
+    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_GENERATE_DLSCH, 1);
+    LOG_D(PHY, "PDSCH generation started (%d) in frame %d.%d\n", msgTx->num_pdsch_slot, frame, slot);
     nr_generate_pdsch(msgTx, frame, slot);
-    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_GENERATE_DLSCH,0);
+    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_GENERATE_DLSCH, 0);
   }
   msgTx->num_pdsch_slot = 0;
 
-  for (int i = 0; i < NR_SYMBOLS_PER_SLOT; i++){
+  for (int i = 0; i < NR_SYMBOLS_PER_SLOT; i++) {
     NR_gNB_CSIRS_t *csirs = &msgTx->csirs_pdu[i];
     if (csirs->active == 1) {
-      LOG_D(PHY, "CSI-RS generation started in frame %d.%d\n",frame,slot);
+      LOG_D(PHY, "CSI-RS generation started in frame %d.%d\n", frame, slot);
       nfapi_nr_dl_tti_csi_rs_pdu_rel15_t *csi_params = &csirs->csirs_pdu.csi_rs_pdu_rel15;
       if (csi_params->csi_type == 2) { // ZP-CSI
         csirs->active = 0;
         return;
       }
-      csi_mapping_parms_t mapping_parms = get_csi_mapping_parms(csi_params->row,
-                                                                csi_params->freq_domain,
-                                                                csi_params->symb_l0,
-                                                                csi_params->symb_l1);
+      csi_mapping_parms_t mapping_parms =
+          get_csi_mapping_parms(csi_params->row, csi_params->freq_domain, csi_params->symb_l0, csi_params->symb_l1);
       nfapi_nr_tx_precoding_and_beamforming_t *pb = &csi_params->precodingAndBeamforming;
       int csi_bitmap = 0;
       int lprime_num = mapping_parms.lprime + 1;
@@ -293,10 +286,10 @@ void phy_procedures_gNB_TX(processingData_L1tx_t *msgTx,
     }
   }
 
-  //apply the OFDM symbol rotation here
+  // apply the OFDM symbol rotation here
   if (gNB->phase_comp) {
     start_meas(&gNB->phase_comp_stats);
-    for(int i = 0; i < gNB->common_vars.num_beams_period; ++i) {
+    for (int i = 0; i < gNB->common_vars.num_beams_period; ++i) {
       for (int aa = 0; aa < cfg->carrier_config.num_tx_ant.value; aa++) {
         apply_nr_rotation_TX(fp,
                              &gNB->common_vars.txdataF[i][aa][txdataF_offset],
@@ -305,9 +298,12 @@ void phy_procedures_gNB_TX(processingData_L1tx_t *msgTx,
                              fp->N_RB_DL,
                              0,
                              fp->Ncp == EXTENDED ? 12 : 14);
-        T(T_GNB_PHY_DL_OUTPUT_SIGNAL, T_INT(0),
-          T_INT(frame), T_INT(slot),
-          T_INT(aa), T_BUFFER(&gNB->common_vars.txdataF[aa][txdataF_offset], fp->samples_per_slot_wCP*sizeof(int32_t)));
+        T(T_GNB_PHY_DL_OUTPUT_SIGNAL,
+          T_INT(0),
+          T_INT(frame),
+          T_INT(slot),
+          T_INT(aa),
+          T_BUFFER(&gNB->common_vars.txdataF[aa][txdataF_offset], fp->samples_per_slot_wCP * sizeof(int32_t)));
       }
     }
     stop_meas(&gNB->phase_comp_stats);
@@ -335,9 +331,7 @@ static int nr_ulsch_procedures(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, boo
   uint32_t G[nb_pusch];
   int pusch_id = 0;
   for (uint8_t ULSCH_id = 0; ULSCH_id < gNB->max_nb_pusch; ULSCH_id++) {
-
     if (ulsch_to_decode[ULSCH_id]) {
-
       ULSCH_ids[pusch_id] = ULSCH_id;
 
       nfapi_nr_pusch_pdu_t *pusch_pdu = &gNB->ulsch[ULSCH_id].harq_process->ulsch_pdu;
@@ -345,31 +339,34 @@ static int nr_ulsch_procedures(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, boo
       uint16_t nb_re_dmrs;
       uint16_t start_symbol = pusch_pdu->start_symbol_index;
       uint16_t number_symbols = pusch_pdu->nr_of_symbols;
-  
+
       uint8_t number_dmrs_symbols = 0;
       for (int l = start_symbol; l < start_symbol + number_symbols; l++)
-        number_dmrs_symbols += ((pusch_pdu->ul_dmrs_symb_pos)>>l)&0x01;
-  
-      if (pusch_pdu->dmrs_config_type==pusch_dmrs_type1)
-        nb_re_dmrs = 6*pusch_pdu->num_dmrs_cdm_grps_no_data;
+        number_dmrs_symbols += ((pusch_pdu->ul_dmrs_symb_pos) >> l) & 0x01;
+
+      if (pusch_pdu->dmrs_config_type == pusch_dmrs_type1)
+        nb_re_dmrs = 6 * pusch_pdu->num_dmrs_cdm_grps_no_data;
       else
-        nb_re_dmrs = 4*pusch_pdu->num_dmrs_cdm_grps_no_data;
-  
+        nb_re_dmrs = 4 * pusch_pdu->num_dmrs_cdm_grps_no_data;
+
       G[pusch_id] = nr_get_G(pusch_pdu->rb_size,
-                            number_symbols,
-                            nb_re_dmrs,
-                            number_dmrs_symbols, // number of dmrs symbols irrespective of single or double symbol dmrs
-                            gNB->ulsch[ULSCH_id].unav_res,
-                            pusch_pdu->qam_mod_order,
-                            pusch_pdu->nrOfLayers);
-      AssertFatal(G[pusch_id]>0,"G is 0 : rb_size %u, number_symbols %d, nb_re_dmrs %d, number_dmrs_symbols %d, qam_mod_order %u, nrOfLayer %u\n",
+                             number_symbols,
+                             nb_re_dmrs,
+                             number_dmrs_symbols, // number of dmrs symbols irrespective of single or double symbol dmrs
+                             gNB->ulsch[ULSCH_id].unav_res,
+                             pusch_pdu->qam_mod_order,
+                             pusch_pdu->nrOfLayers);
+      AssertFatal(G[pusch_id] > 0,
+                  "G is 0 : rb_size %u, number_symbols %d, nb_re_dmrs %d, number_dmrs_symbols %d, qam_mod_order %u, nrOfLayer %u\n",
                   pusch_pdu->rb_size,
                   number_symbols,
                   nb_re_dmrs,
                   number_dmrs_symbols, // number of dmrs symbols irrespective of single or double symbol dmrs
                   pusch_pdu->qam_mod_order,
                   pusch_pdu->nrOfLayers);
-      LOG_D(PHY,"rb_size %d, number_symbols %d, nb_re_dmrs %d, dmrs symbol positions %d, number_dmrs_symbols %d, qam_mod_order %d, nrOfLayer %d\n",
+      LOG_D(PHY,
+            "rb_size %d, number_symbols %d, nb_re_dmrs %d, dmrs symbol positions %d, number_dmrs_symbols %d, qam_mod_order %d, "
+            "nrOfLayer %d\n",
             pusch_pdu->rb_size,
             number_symbols,
             nb_re_dmrs,
@@ -380,7 +377,7 @@ static int nr_ulsch_procedures(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, boo
       pusch_id++;
     }
   }
-  
+
   //----------------------------------------------------------
   //--------------------- ULSCH decoding ---------------------
   //----------------------------------------------------------
@@ -429,7 +426,8 @@ static int nr_ulsch_procedures(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, boo
       LOG_D(PHY, "ULSCH received ok \n");
       ulsch->active = false;
       ulsch_harq->round = 0;
-      ulsch->last_iteration_cnt = ulsch->max_ldpc_iterations; // Setting to max_ldpc_iterations is sufficient given that this variable is only used for checking for failure
+      ulsch->last_iteration_cnt = ulsch->max_ldpc_iterations; // Setting to max_ldpc_iterations is sufficient given that this
+                                                              // variable is only used for checking for failure
     } else {
       LOG_D(PHY,
             "[gNB %d] ULSCH: Setting NAK for SFN/SF %d/%d (pid %d, ndi %d, status %d, round %d, RV %d, prb_start %d, prb_size %d, "
@@ -448,10 +446,12 @@ static int nr_ulsch_procedures(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, boo
       nr_fill_indication(gNB, ulsch->frame, ulsch->slot, ULSCH_id, ulsch->harq_pid, 1, 0, crc, pdu);
       gNBdumpScopeData(gNB, ulsch->slot, ulsch->frame, "ULSCH_NACK");
       ulsch->handled = 1;
-      LOG_D(PHY, "ULSCH %d in error\n",ULSCH_id);
-      ulsch->last_iteration_cnt = ulsch->max_ldpc_iterations + 1; // Setting to max_ldpc_iterations + 1 is sufficient given that this variable is only used for checking for failure
+      LOG_D(PHY, "ULSCH %d in error\n", ULSCH_id);
+      ulsch->last_iteration_cnt =
+          ulsch->max_ldpc_iterations
+          + 1; // Setting to max_ldpc_iterations + 1 is sufficient given that this variable is only used for checking for failure
     }
-    LOG_D(PHY,"ULSCH:TBS%d\n",  ulsch_harq->TBS);
+    LOG_D(PHY, "ULSCH:TBS%d\n", ulsch_harq->TBS);
   }
 
   return ret_nr_ulsch_decoding;
@@ -517,9 +517,12 @@ void nr_fill_indication(PHY_VARS_gNB *gNB,
         sync_pos);
 
   int cqi;
-  if      (SNRtimes10 < -640) cqi=0;
-  else if (SNRtimes10 >  635) cqi=255;
-  else                        cqi=(640+SNRtimes10)/5;
+  if (SNRtimes10 < -640)
+    cqi = 0;
+  else if (SNRtimes10 > 635)
+    cqi = 255;
+  else
+    cqi = (640 + SNRtimes10) / 5;
 
   crc->handle = pusch_pdu->handle;
   crc->rnti = pusch_pdu->rnti;
@@ -558,29 +561,40 @@ static void fill_ul_rb_mask(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, uint32
       rb_mask_ul[symbol][m] = 0;
       for (int i = 0; i < 32; i++) {
         prbpos = (m * 32) + i;
-        if (prbpos>gNB->frame_parms.N_RB_UL)
+        if (prbpos > gNB->frame_parms.N_RB_UL)
           break;
         rb_mask_ul[symbol][m] |= (gNB->ulprbbl[prbpos] > 0 ? 1U : 0) << i;
       }
     }
   }
 
-  for (int i = 0; i < gNB->max_nb_pucch; i++){
+  for (int i = 0; i < gNB->max_nb_pucch; i++) {
     NR_gNB_PUCCH_t *pucch = &gNB->pucch[i];
     if (pucch) {
-      if ((pucch->active == 1) &&
-          (pucch->frame == frame_rx) &&
-          (pucch->slot == slot_rx) ) {
-        nfapi_nr_pucch_pdu_t  *pucch_pdu = &pucch->pucch_pdu;
-        LOG_D(PHY,"%d.%d pucch %d : start_symbol %d, nb_symbols %d, prb_size %d\n",frame_rx,slot_rx,i,pucch_pdu->start_symbol_index,pucch_pdu->nr_of_symbols,pucch_pdu->prb_size);
-        for (int symbol=pucch_pdu->start_symbol_index ; symbol<(pucch_pdu->start_symbol_index+pucch_pdu->nr_of_symbols);symbol++) {
-          if(gNB->frame_parms.frame_type == FDD ||
-              (gNB->frame_parms.frame_type == TDD && gNB->gNB_config.tdd_table.max_tdd_periodicity_list[slot_rx].max_num_of_symbol_per_slot_list[symbol].slot_config.value==1)) {
-            for (rb=0; rb<pucch_pdu->prb_size; rb++) {
-              rb2 = rb + pucch_pdu->bwp_start +
-                    ((symbol < pucch_pdu->start_symbol_index+(pucch_pdu->nr_of_symbols>>1)) || (pucch_pdu->freq_hop_flag == 0) ?
-                     pucch_pdu->prb_start : pucch_pdu->second_hop_prb);
-              rb_mask_ul[symbol][rb2>>5] |= (((uint32_t)1)<<(rb2&31));
+      if ((pucch->active == 1) && (pucch->frame == frame_rx) && (pucch->slot == slot_rx)) {
+        nfapi_nr_pucch_pdu_t *pucch_pdu = &pucch->pucch_pdu;
+        LOG_D(PHY,
+              "%d.%d pucch %d : start_symbol %d, nb_symbols %d, prb_size %d\n",
+              frame_rx,
+              slot_rx,
+              i,
+              pucch_pdu->start_symbol_index,
+              pucch_pdu->nr_of_symbols,
+              pucch_pdu->prb_size);
+        for (int symbol = pucch_pdu->start_symbol_index; symbol < (pucch_pdu->start_symbol_index + pucch_pdu->nr_of_symbols);
+             symbol++) {
+          if (gNB->frame_parms.frame_type == FDD
+              || (gNB->frame_parms.frame_type == TDD
+                  && gNB->gNB_config.tdd_table.max_tdd_periodicity_list[slot_rx]
+                             .max_num_of_symbol_per_slot_list[symbol]
+                             .slot_config.value
+                         == 1)) {
+            for (rb = 0; rb < pucch_pdu->prb_size; rb++) {
+              rb2 = rb + pucch_pdu->bwp_start
+                    + ((symbol < pucch_pdu->start_symbol_index + (pucch_pdu->nr_of_symbols >> 1)) || (pucch_pdu->freq_hop_flag == 0)
+                           ? pucch_pdu->prb_start
+                           : pucch_pdu->second_hop_prb);
+              rb_mask_ul[symbol][rb2 >> 5] |= (((uint32_t)1) << (rb2 & 31));
             }
           }
         }
@@ -617,8 +631,8 @@ static void fill_ul_rb_mask(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, uint32
     if (srs) {
       if ((srs->active == 1) && (srs->frame == frame_rx) && (srs->slot == slot_rx)) {
         nfapi_nr_srs_pdu_t *srs_pdu = &srs->srs_pdu;
-        for(int symbol = 0; symbol < (1 << srs_pdu->num_symbols); symbol++) {
-          for(rb = srs_pdu->bwp_start; rb < (srs_pdu->bwp_start+srs_pdu->bwp_size); rb++) {
+        for (int symbol = 0; symbol < (1 << srs_pdu->num_symbols); symbol++) {
+          for (rb = srs_pdu->bwp_start; rb < (srs_pdu->bwp_start + srs_pdu->bwp_size); rb++) {
             rb_mask_ul[srs_pdu->time_start_position + symbol][rb >> 5] |= 1U << (rb & 31);
           }
         }
@@ -629,12 +643,13 @@ static void fill_ul_rb_mask(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, uint32
 
 int fill_srs_reported_symbol(nfapi_nr_srs_reported_symbol_t *reported_symbol,
                              const nfapi_nr_srs_pdu_t *srs_pdu,
-                                  const int N_RB_UL,
-                                  const int8_t *snr_per_rb,
-                                  const int srs_est) {
+                             const int N_RB_UL,
+                             const int8_t *snr_per_rb,
+                             const int srs_est)
+{
   reported_symbol->num_prgs = srs_pdu->beamforming.num_prgs;
   for (int prg_idx = 0; prg_idx < reported_symbol->num_prgs; prg_idx++) {
-    if (srs_est<0) {
+    if (srs_est < 0) {
       reported_symbol->prg_list[prg_idx].rb_snr = 0xFF;
     } else if (snr_per_rb[prg_idx] < -64) {
       reported_symbol->prg_list[prg_idx].rb_snr = 0;
@@ -660,27 +675,26 @@ int fill_srs_channel_matrix(uint8_t *channel_matrix,
                             const c16_t srs_estimated_channel_freq[][1 << srs_pdu->num_ant_ports]
                                                                   [frame_parms->ofdm_symbol_size * (1 << srs_pdu->num_symbols)])
 {
-  const uint64_t subcarrier_offset = frame_parms->first_carrier_offset + srs_pdu->bwp_start*NR_NB_SC_PER_RB;
-  const uint16_t step = prg_size*NR_NB_SC_PER_RB;
+  const uint64_t subcarrier_offset = frame_parms->first_carrier_offset + srs_pdu->bwp_start * NR_NB_SC_PER_RB;
+  const uint16_t step = prg_size * NR_NB_SC_PER_RB;
 
-  c16_t *channel_matrix16 = (c16_t*)channel_matrix;
-  c8_t *channel_matrix8 = (c8_t*)channel_matrix;
+  c16_t *channel_matrix16 = (c16_t *)channel_matrix;
+  c8_t *channel_matrix8 = (c8_t *)channel_matrix;
 
-  for(int uI = 0; uI < num_ue_srs_ports; uI++) {
-    for(int gI = 0; gI < num_gnb_antenna_elements; gI++) {
-
+  for (int uI = 0; uI < num_ue_srs_ports; uI++) {
+    for (int gI = 0; gI < num_gnb_antenna_elements; gI++) {
       uint16_t subcarrier = subcarrier_offset + nr_srs_info->k_0_p[uI][0];
-      if (subcarrier>frame_parms->ofdm_symbol_size) {
+      if (subcarrier > frame_parms->ofdm_symbol_size) {
         subcarrier -= frame_parms->ofdm_symbol_size;
       }
 
-      for(int pI = 0; pI < num_prgs; pI++) {
+      for (int pI = 0; pI < num_prgs; pI++) {
         const c16_t *srs_estimated_channel16 = srs_estimated_channel_freq[gI][uI] + subcarrier;
-        uint16_t index = uI*num_gnb_antenna_elements*num_prgs + gI*num_prgs + pI;
+        uint16_t index = uI * num_gnb_antenna_elements * num_prgs + gI * num_prgs + pI;
 
         if (normalized_iq_representation == 0) {
-          channel_matrix8[index].r = (int8_t)(srs_estimated_channel16->r>>8);
-          channel_matrix8[index].i = (int8_t)(srs_estimated_channel16->i>>8);
+          channel_matrix8[index].r = (int8_t)(srs_estimated_channel16->r >> 8);
+          channel_matrix8[index].i = (int8_t)(srs_estimated_channel16->i >> 8);
         } else {
           channel_matrix16[index].r = srs_estimated_channel16->r;
           channel_matrix16[index].i = srs_estimated_channel16->i;
@@ -689,7 +703,7 @@ int fill_srs_channel_matrix(uint8_t *channel_matrix,
         // Subcarrier increment
         subcarrier += step;
         if (subcarrier >= frame_parms->ofdm_symbol_size) {
-          subcarrier=subcarrier-frame_parms->ofdm_symbol_size;
+          subcarrier = subcarrier - frame_parms->ofdm_symbol_size;
         }
       }
     }
@@ -700,12 +714,10 @@ int fill_srs_channel_matrix(uint8_t *channel_matrix,
 
 int check_srs_pdu(const nfapi_nr_srs_pdu_t *srs_pdu, nfapi_nr_srs_pdu_t *saved_srs_pdu)
 {
-  if (saved_srs_pdu->bwp_start == srs_pdu->bwp_start &&
-      saved_srs_pdu->bwp_size == srs_pdu->bwp_size &&
-      saved_srs_pdu->num_ant_ports == srs_pdu->num_ant_ports &&
-      saved_srs_pdu->time_start_position == srs_pdu->time_start_position &&
-      saved_srs_pdu->num_symbols == srs_pdu->num_symbols &&
-      saved_srs_pdu->config_index == srs_pdu->config_index) {
+  if (saved_srs_pdu->bwp_start == srs_pdu->bwp_start && saved_srs_pdu->bwp_size == srs_pdu->bwp_size
+      && saved_srs_pdu->num_ant_ports == srs_pdu->num_ant_ports
+      && saved_srs_pdu->time_start_position == srs_pdu->time_start_position && saved_srs_pdu->num_symbols == srs_pdu->num_symbols
+      && saved_srs_pdu->config_index == srs_pdu->config_index) {
     return 1;
   }
   *saved_srs_pdu = *srs_pdu;
@@ -719,18 +731,22 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
   int pusch_decode_done = 0;
   int pusch_DTX = 0;
 
-  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_gNB_UESPEC_RX,1);
-  LOG_D(PHY,"phy_procedures_gNB_uespec_RX frame %d, slot %d\n",frame_rx,slot_rx);
+  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_gNB_UESPEC_RX, 1);
+  LOG_D(PHY, "phy_procedures_gNB_uespec_RX frame %d, slot %d\n", frame_rx, slot_rx);
   // Mask of occupied RBs, per symbol and PRB
   uint32_t rb_mask_ul[14][9];
   fill_ul_rb_mask(gNB, frame_rx, slot_rx, rb_mask_ul);
 
-  int first_symb=0,num_symb=0;
+  int first_symb = 0, num_symb = 0;
   if (gNB->frame_parms.frame_type == TDD)
-    for(int symbol_count=0; symbol_count<NR_NUMBER_OF_SYMBOLS_PER_SLOT; symbol_count++) {
-      if (gNB->gNB_config.tdd_table.max_tdd_periodicity_list[slot_rx].max_num_of_symbol_per_slot_list[symbol_count].slot_config.value==1) {
-	      if (num_symb==0) first_symb=symbol_count;
-	      num_symb++;
+    for (int symbol_count = 0; symbol_count < NR_NUMBER_OF_SYMBOLS_PER_SLOT; symbol_count++) {
+      if (gNB->gNB_config.tdd_table.max_tdd_periodicity_list[slot_rx]
+              .max_num_of_symbol_per_slot_list[symbol_count]
+              .slot_config.value
+          == 1) {
+        if (num_symb == 0)
+          first_symb = symbol_count;
+        num_symb++;
       }
     }
   else
@@ -804,7 +820,7 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
     AssertFatal(ulsch_harq != NULL, "harq_pid %d is not allocated\n", ulsch->harq_pid);
     if ((ulsch->active == true) && (ulsch->frame == frame_rx) && (ulsch->slot == slot_rx) && (ulsch->handled == 0)) {
       LOG_D(PHY, "PUSCH ID %d with RNTI %x detection started in frame %d slot %d\n", ULSCH_id, ulsch->rnti, frame_rx, slot_rx);
-  
+
       int num_dmrs = 0;
       for (int s = 0; s < NR_NUMBER_OF_SYMBOLS_PER_SLOT; s++)
         num_dmrs += (ulsch_harq->ulsch_pdu.ul_dmrs_symb_pos >> s) & 1;
@@ -866,8 +882,7 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
               "PUSCH not detected in %d.%d (%d)\n",
               frame_rx,
               slot_rx,
-              (dB_fixed_x10(pusch_vars->ulsch_power_tot)-
-              dB_fixed_x10(pusch_vars->ulsch_noise_power_tot))/10);
+              (dB_fixed_x10(pusch_vars->ulsch_power_tot) - dB_fixed_x10(pusch_vars->ulsch_noise_power_tot)) / 10);
         pusch_vars->ulsch_power_tot = pusch_vars->ulsch_noise_power_tot;
         pusch_vars->DTX = 1;
         if (stats)
@@ -883,25 +898,19 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
           continue;
         }
       } else {
-        // LOG_A(PHY,
-        //       "PUSCH detected in %d.%d (%d)\n",
-        //       frame_rx,
-        //       slot_rx,
-        //       (dB_fixed_x10(pusch_vars->ulsch_power_tot)-
-        //       dB_fixed_x10(pusch_vars->ulsch_noise_power_tot))/10);
-        // FILE *file; // 定义文件指针
-        // char *filename_dmrs = "../test/pusch_snr_N310_N78Antenna_position_nlos.txt"; // 文件名
-        // file = fopen(filename_dmrs, "a");
-        // fprintf(file, "%d\n",(dB_fixed_x10(pusch_vars->ulsch_power_tot)-
-        //       dB_fixed_x10(pusch_vars->ulsch_noise_power_tot))/10);
-        // fclose(file);
-        // int32_t snr = (dB_fixed_x10(pusch_vars->ulsch_power_tot)-
-        //       dB_fixed_x10(pusch_vars->ulsch_noise_power_tot));
-        // if (snr >= 200) {
-        //       printf("set RC.msg3_flag = 1\n");
-        //       RC.msg3_flag = 1;
-        //       gNB->common_vars.debugBuff[60000] = snr;
-        // }
+        LOG_D(PHY,
+              "PUSCH detected in %d.%d (%d)\n",
+              frame_rx,
+              slot_rx,
+              (dB_fixed_x10(pusch_vars->ulsch_power_tot) - dB_fixed_x10(pusch_vars->ulsch_noise_power_tot)) / 10);
+        if (RC.rxcapture.cfg_sig == RXCAP_MSG5) {
+          int32_t snr = (dB_fixed_x10(pusch_vars->ulsch_power_tot) - dB_fixed_x10(pusch_vars->ulsch_noise_power_tot));
+          if (snr >= 200) {
+            printf("set RC.capture_flag = 1\n");
+            RC.capture_flag = 1;
+            gNB->common_vars.debugBuff[60000] = snr;
+          }
+        }
 
         pusch_vars->DTX = 0;
       }
@@ -922,7 +931,7 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
 
   int const ret_nr_ulsch_procedures = nr_ulsch_procedures(gNB, frame_rx, slot_rx, ulsch_to_decode, UL_INFO);
   if (ret_nr_ulsch_procedures != 0) {
-    LOG_E(PHY,"Error in nr_ulsch_procedures, returned %d\n",ret_nr_ulsch_procedures);
+    LOG_E(PHY, "Error in nr_ulsch_procedures, returned %d\n", ret_nr_ulsch_procedures);
   }
 
   /* Do ULSCH decoding time measurement only when number of PUSCH is limited to 1
@@ -953,9 +962,15 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
 
         start_meas(&gNB->generate_srs_stats);
         if (check_srs_pdu(srs_pdu, &gNB->nr_srs_info[i]->srs_pdu) == 0) {
-          generate_srs_nr(srs_pdu, frame_parms, gNB->nr_srs_info[i]->srs_generated_signal, 0, gNB->nr_srs_info[i], AMP, frame_rx, slot_rx);
-          LOG_I(NR_PHY,"generate_srs_nr\n");
-
+          generate_srs_nr(srs_pdu,
+                          frame_parms,
+                          gNB->nr_srs_info[i]->srs_generated_signal,
+                          0,
+                          gNB->nr_srs_info[i],
+                          AMP,
+                          frame_rx,
+                          slot_rx);
+          LOG_I(NR_PHY, "generate_srs_nr\n");
         }
         stop_meas(&gNB->generate_srs_stats);
         c16_t **rxdataF = gNB->common_vars.rxdataF[srs->beam_nb];
@@ -967,35 +982,28 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
           start_meas(&gNB->srs_channel_estimation_stats);
           // LOG_I(NR_PHY,"%d.%d calling function\n",frame_rx,slot_rx);
 
-
           nr_srs_channel_estimation(gNB,
                                     frame_rx,
                                     slot_rx,
                                     srs_pdu,
                                     gNB->nr_srs_info[i],
-                                    (const c16_t**)gNB->nr_srs_info[i]->srs_generated_signal,
+                                    (const c16_t **)gNB->nr_srs_info[i]->srs_generated_signal,
                                     srs_received_signal,
                                     srs_estimated_channel_freq,
                                     srs_estimated_channel_time,
                                     srs_estimated_channel_time_shifted,
                                     snr_per_rb,
                                     &gNB->srs->snr);
-          // LOG_A(PHY,
-          // "PUSCH_SRS detected in %d.%d SNR:(%d)\n",
-          // frame_rx,
-          // slot_rx,
-          // gNB->srs->snr
-          // );
-          // if (gNB->srs->snr >= 20 && slot_rx == 8)
-          // {
-          // printf("set RC.msg3_flag = 1\n");
-          // RC.msg3_flag = 1;
-          // gNB->common_vars.debugBuff[60000] = gNB->srs->snr;       
-          // }
-
+          if (RC.rxcapture.cfg_sig == RXCAP_SRS) {
+            LOG_A(PHY, "PUSCH_SRS detected in %d.%d SNR:(%d)\n", frame_rx, slot_rx, gNB->srs->snr);
+            if (gNB->srs->snr >= 20 && slot_rx == 8) {
+              printf("set RC.capture_flag = 1\n");
+              RC.capture_flag = 1;
+              gNB->common_vars.debugBuff[60000] = gNB->srs->snr;
+            }
+          }
 
           stop_meas(&gNB->srs_channel_estimation_stats);
-          
         }
 
         if ((gNB->srs->snr * 10) < gNB->srs_thres) {
@@ -1027,9 +1035,12 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
         srs_indication->handle = srs_pdu->handle;
         srs_indication->rnti = srs_pdu->rnti;
         start_meas(&gNB->srs_timing_advance_stats);
-        srs_indication->timing_advance_offset = srs_est >= 0 ? nr_est_timing_advance_srs(frame_parms, srs_estimated_channel_time[0]) : 0xFFFF;
+        srs_indication->timing_advance_offset =
+            srs_est >= 0 ? nr_est_timing_advance_srs(frame_parms, srs_estimated_channel_time[0]) : 0xFFFF;
         stop_meas(&gNB->srs_timing_advance_stats);
-        srs_indication->timing_advance_offset_nsec = srs_est >= 0 ? (int16_t)((((int32_t)srs_indication->timing_advance_offset - 31) * ((int32_t)TC_NSEC_x32768)) >> 15) : 0xFFFF;
+        srs_indication->timing_advance_offset_nsec =
+            srs_est >= 0 ? (int16_t)((((int32_t)srs_indication->timing_advance_offset - 31) * ((int32_t)TC_NSEC_x32768)) >> 15)
+                         : 0xFFFF;
         switch (srs_pdu->srs_parameters_v4.usage) {
           case 0:
             LOG_W(NR_PHY, "SRS report was not requested by MAC\n");
@@ -1072,14 +1083,18 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
             nfapi_nr_srs_beamforming_report_t nr_srs_bf_report;
             nr_srs_bf_report.prg_size = srs_pdu->beamforming.prg_size;
             nr_srs_bf_report.num_symbols = 1 << srs_pdu->num_symbols;
-            nr_srs_bf_report.wide_band_snr = srs_est >= 0 ? (gNB->srs->snr + 64) << 1 : 0xFF; // 0xFF will be set if this field is invalid
+            nr_srs_bf_report.wide_band_snr =
+                srs_est >= 0 ? (gNB->srs->snr + 64) << 1 : 0xFF; // 0xFF will be set if this field is invalid
             nr_srs_bf_report.num_reported_symbols = 1 << srs_pdu->num_symbols;
             fill_srs_reported_symbol(&nr_srs_bf_report.reported_symbol_list[0], srs_pdu, frame_parms->N_RB_UL, snr_per_rb, srs_est);
 
 #ifdef SRS_IND_DEBUG
             LOG_I(NR_PHY, "nr_srs_bf_report.prg_size = %i\n", nr_srs_bf_report.prg_size);
             LOG_I(NR_PHY, "nr_srs_bf_report.num_symbols = %i\n", nr_srs_bf_report.num_symbols);
-            LOG_I(NR_PHY, "nr_srs_bf_report.wide_band_snr = %i (%i dB)\n", nr_srs_bf_report.wide_band_snr, (nr_srs_bf_report.wide_band_snr >> 1) - 64);
+            LOG_I(NR_PHY,
+                  "nr_srs_bf_report.wide_band_snr = %i (%i dB)\n",
+                  nr_srs_bf_report.wide_band_snr,
+                  (nr_srs_bf_report.wide_band_snr >> 1) - 64);
             LOG_I(NR_PHY, "nr_srs_bf_report.num_reported_symbols = %i\n", nr_srs_bf_report.num_reported_symbols);
             // LOG_I(NR_PHY, "nr_srs_bf_report.prgs[0].num_prgs = %i\n", nr_srs_bf_report.prgs[0].num_prgs);
             // for (int prg_idx = 0; prg_idx < nr_srs_bf_report.prgs[0].num_prgs; prg_idx++) {
@@ -1116,8 +1131,12 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
                                     srs_estimated_channel_freq);
 
 #ifdef SRS_IND_DEBUG
-            LOG_I(NR_PHY, "nr_srs_channel_iq_matrix.normalized_iq_representation = %i\n", nr_srs_channel_iq_matrix.normalized_iq_representation);
-            LOG_I(NR_PHY, "nr_srs_channel_iq_matrix.num_gnb_antenna_elements = %i\n", nr_srs_channel_iq_matrix.num_gnb_antenna_elements);
+            LOG_I(NR_PHY,
+                  "nr_srs_channel_iq_matrix.normalized_iq_representation = %i\n",
+                  nr_srs_channel_iq_matrix.normalized_iq_representation);
+            LOG_I(NR_PHY,
+                  "nr_srs_channel_iq_matrix.num_gnb_antenna_elements = %i\n",
+                  nr_srs_channel_iq_matrix.num_gnb_antenna_elements);
             LOG_I(NR_PHY, "nr_srs_channel_iq_matrix.num_ue_srs_ports = %i\n", nr_srs_channel_iq_matrix.num_ue_srs_ports);
             LOG_I(NR_PHY, "nr_srs_channel_iq_matrix.prg_size = %i\n", nr_srs_channel_iq_matrix.prg_size);
             LOG_I(NR_PHY, "nr_srs_channel_iq_matrix.num_prgs = %i\n", nr_srs_channel_iq_matrix.num_prgs);
@@ -1126,21 +1145,24 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
             for (int uI = 0; uI < nr_srs_channel_iq_matrix.num_ue_srs_ports; uI++) {
               for (int gI = 0; gI < nr_srs_channel_iq_matrix.num_gnb_antenna_elements; gI++) {
                 for (int pI = 0; pI < nr_srs_channel_iq_matrix.num_prgs; pI++) {
-                  uint16_t index =
-                      uI * nr_srs_channel_iq_matrix.num_gnb_antenna_elements * nr_srs_channel_iq_matrix.num_prgs + gI * nr_srs_channel_iq_matrix.num_prgs + pI;
+                  uint16_t index = uI * nr_srs_channel_iq_matrix.num_gnb_antenna_elements * nr_srs_channel_iq_matrix.num_prgs
+                                   + gI * nr_srs_channel_iq_matrix.num_prgs + pI;
                   LOG_I(NR_PHY,
                         "(uI %i, gI %i, pI %i) channel_matrix --> real %i, imag %i\n",
                         uI,
                         gI,
                         pI,
-                        nr_srs_channel_iq_matrix.normalized_iq_representation == 0 ? channel_matrix8[index].r : channel_matrix16[index].r,
-                        nr_srs_channel_iq_matrix.normalized_iq_representation == 0 ? channel_matrix8[index].i : channel_matrix16[index].i);
+                        nr_srs_channel_iq_matrix.normalized_iq_representation == 0 ? channel_matrix8[index].r
+                                                                                   : channel_matrix16[index].r,
+                        nr_srs_channel_iq_matrix.normalized_iq_representation == 0 ? channel_matrix8[index].i
+                                                                                   : channel_matrix16[index].i);
                 }
               }
             }
 #endif
 
-            report_tlv->length = pack_nr_srs_normalized_channel_iq_matrix(&nr_srs_channel_iq_matrix, report_tlv->value, sizeof(report_tlv->value));
+            report_tlv->length =
+                pack_nr_srs_normalized_channel_iq_matrix(&nr_srs_channel_iq_matrix, report_tlv->value, sizeof(report_tlv->value));
             stop_meas(&gNB->srs_iq_matrix_stats);
             break;
           }
@@ -1172,251 +1194,275 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
   stop_meas(&gNB->phy_proc_rx);
 
   if (pucch_decode_done || pusch_decode_done) {
-    T(T_GNB_PHY_PUCCH_PUSCH_IQ, T_INT(frame_rx), T_INT(slot_rx), T_BUFFER(&gNB->common_vars.rxdataF[0][0][0], gNB->frame_parms.symbols_per_slot * gNB->frame_parms.ofdm_symbol_size * 4));
+    T(T_GNB_PHY_PUCCH_PUSCH_IQ,
+      T_INT(frame_rx),
+      T_INT(slot_rx),
+      T_BUFFER(&gNB->common_vars.rxdataF[0][0][0], gNB->frame_parms.symbols_per_slot * gNB->frame_parms.ofdm_symbol_size * 4));
   }
 
-  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_gNB_UESPEC_RX,0);
+  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_gNB_UESPEC_RX, 0);
   return pusch_DTX;
 }
-void create_directory_recursively(const char *path) {
-    char tmp[256];
-    char *p = NULL;
-    size_t len;
+void create_directory_recursively(const char *path)
+{
+  char tmp[256];
+  char *p = NULL;
+  size_t len;
 
-    snprintf(tmp, sizeof(tmp), "%s", path);
-    len = strlen(tmp);
-    if (len > 0 && tmp[len - 1] == '/') {
-        tmp[len - 1] = 0;
-    }
+  snprintf(tmp, sizeof(tmp), "%s", path);
+  len = strlen(tmp);
+  if (len > 0 && tmp[len - 1] == '/') {
+    tmp[len - 1] = 0;
+  }
 
-    for (p = tmp + 1; *p; p++) {
-        if (*p == '/') {
-            *p = 0;
-            if (mkdir(tmp, 0755) != 0 && errno != EEXIST) {
-                fprintf(stderr, "Failed to create directory %s: %s\n", tmp, strerror(errno));
-                return;
-            }
-            *p = '/';
-        }
-    }
-    if (mkdir(tmp, 0755) != 0 && errno != EEXIST) {
+  for (p = tmp + 1; *p; p++) {
+    if (*p == '/') {
+      *p = 0;
+      if (mkdir(tmp, 0755) != 0 && errno != EEXIST) {
         fprintf(stderr, "Failed to create directory %s: %s\n", tmp, strerror(errno));
+        return;
+      }
+      *p = '/';
     }
+  }
+  if (mkdir(tmp, 0755) != 0 && errno != EEXIST) {
+    fprintf(stderr, "Failed to create directory %s: %s\n", tmp, strerror(errno));
+  }
 }
 
 typedef struct {
-    int32_t *buffer;
-    int num_samples;
-    char *filename; // 改为指针，动态分配
-    char *varname;  // 改为指针，动态分配
+  int32_t *buffer;
+  int num_samples;
+  char *filename; // 改为指针，动态分配
+  char *varname; // 改为指针，动态分配
 } ThreadArgs;
 
-void save_data_async(const void *source_buffer, size_t num_samples, size_t sample_size,
-                     const char *filename_format, const char *varname_format, int file_num)
+void save_data_async(const void *source_buffer,
+                     size_t num_samples,
+                     size_t sample_size,
+                     const char *filename_format,
+                     const char *varname_format,
+                     int file_num)
 {
+  ThreadArgs *args = malloc(sizeof(ThreadArgs));
+  if (!args) {
+    printf("ERROR: malloc failed for ThreadArgs\n");
+    return;
+  }
 
-    ThreadArgs *args = malloc(sizeof(ThreadArgs));
-    if (!args) { printf("ERROR: malloc failed for ThreadArgs\n"); return; }
+  args->filename = malloc(256);
+  if (!args->filename) {
+    printf("ERROR: malloc failed for filename\n");
+    free(args);
+    return;
+  }
 
-    args->filename = malloc(256);
-    if (!args->filename) { printf("ERROR: malloc failed for filename\n"); free(args); return; }
+  args->varname = malloc(100);
+  if (!args->varname) {
+    printf("ERROR: malloc failed for varname\n");
+    free(args->filename);
+    free(args);
+    return;
+  }
 
-    args->varname = malloc(100);
-    if (!args->varname) { printf("ERROR: malloc failed for varname\n"); free(args->filename); free(args); return; }
+  args->buffer = malloc(num_samples * sample_size);
+  if (!args->buffer) {
+    printf("ERROR: malloc failed for buffer copy\n");
+    free(args->varname);
+    free(args->filename);
+    free(args);
+    return;
+  }
+  snprintf(args->filename, 256, filename_format, file_num);
+  snprintf(args->varname, 100, varname_format, file_num);
+  memcpy(args->buffer, source_buffer, num_samples * sample_size);
+  args->num_samples = num_samples;
+  pthread_t save_thread;
+  int ret = pthread_create(&save_thread, NULL, save_debugBuff_to_mat, (void *)args);
+  if (ret != 0) {
+    printf("Failed to create save thread: %d\n", ret);
+    // 如果线程创建失败，必须在这里释放所有已分配的内存
+    free(args->buffer);
+    free(args->filename);
+    free(args->varname);
+    free(args);
+    return;
+  }
 
-    args->buffer = malloc(num_samples * sample_size);
-    if (!args->buffer) { printf("ERROR: malloc failed for buffer copy\n"); free(args->varname); free(args->filename); free(args); return; }
-    snprintf(args->filename, 256, filename_format, file_num);
-    snprintf(args->varname, 100, varname_format, file_num);
-    memcpy(args->buffer, source_buffer, num_samples * sample_size);
-    args->num_samples = num_samples;
-    pthread_t save_thread;
-    int ret = pthread_create(&save_thread, NULL, save_debugBuff_to_mat, (void *)args);
-    if (ret != 0) {
-        printf("Failed to create save thread: %d\n", ret);
-        // 如果线程创建失败，必须在这里释放所有已分配的内存
-        free(args->buffer);
-        free(args->filename);
-        free(args->varname);
-        free(args);
-        return;
-    }
-
-    // 分离线程，将内存管理的责任完全交给新线程
-    pthread_detach(save_thread);
+  // 分离线程，将内存管理的责任完全交给新线程
+  pthread_detach(save_thread);
 }
-
 
 /**
  * @brief 保存 msg3 相关的 IQ 数据，包括时域、频域和 DMRS。
  */
-void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx){
-    printf("(%d.%d)\tCalling msg3_save\n", frame_rx, slot_rx); 
-    NR_DL_FRAME_PARMS *frame_parms = &gNB->frame_parms;
-    RU_t *ru = gNB->RU_list[0];
+void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
+{
+  printf("(%d.%d)\tCalling msg3_save\n", frame_rx, slot_rx);
+  NR_DL_FRAME_PARMS *frame_parms = &gNB->frame_parms;
+  RU_t *ru = gNB->RU_list[0];
 
-    // --- 1. 定义基础输出目录和子目录 ---
-    const char *base_dir = "../260120_DATA/260120_INDOOR_LOS1m_NR_80RB_TYPE1_N78_UE11";
-    char time_iq_dir[256], freq_iq_dir[256], dmrs_dir[256];
-    // char time_iq_dir[256], snr_dir[256],freq_iq_dir[256];
-    
-    snprintf(time_iq_dir, sizeof(time_iq_dir), "%s/RAWIQ/TIME", base_dir);
-    snprintf(freq_iq_dir, sizeof(freq_iq_dir), "%s/RAWIQ/FREQ", base_dir);
-    snprintf(dmrs_dir, sizeof(dmrs_dir), "%s/DMRS_IDEL", base_dir);
-    // snprintf(snr_dir, sizeof(snr_dir), "%s/SNR_IDEL", base_dir);
-    // snprintf(srs_dir, sizeof(srs_dir), "%s/SRS_IDEL", base_dir);
-    // --- 2. 自动创建目录 ---
-    create_directory_recursively(time_iq_dir);
-    create_directory_recursively(freq_iq_dir);
-    create_directory_recursively(dmrs_dir);
-    // create_directory_recursively(snr_dir);
-    // create_directory_recursively(srs_dir);
-    // --- 3. 保存时域数据 (rxdata) ---
-    const int32_t *rxdata_ptr = &ru->common.rxdata[0][frame_parms->get_samples_slot_timestamp(slot_rx, frame_parms, 0) - ru->N_TA_offset];
-    size_t rxdata_samples = frame_parms->get_samples_per_slot(slot_rx, frame_parms);
-    char time_filename_fmt[300];
-    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.mat", time_iq_dir, nums);
-    
-    // 调用异步保存函数
-    save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums);
+  // --- 1. 定义基础输出目录和子目录 ---
+  const char *base_dir = RC.rxcapture.cfg.output_dir;
+  char time_iq_dir[256], freq_iq_dir[256], dmrs_dir[256];
+  // char time_iq_dir[256], snr_dir[256],freq_iq_dir[256];
 
-    // --- 4. 保存频域数据 (rxdataF) ---
-    // 假设: rxdataF 包含了一个时隙的所有OFDM符号的频域数据
-    // 假设大小为: 14个符号 * ofdm符号大小
-    const int32_t *rxdataF_ptr = &ru->common.rxdataF[0][frame_parms->get_samples_slot_timestamp(slot_rx & 3, frame_parms, 0)]; // 假设从天线0开始
-    size_t rxdataF_samples = frame_parms->get_samples_per_slot(slot_rx & 3, frame_parms); // 假设大小
-    char freq_filename_fmt[300];
-    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.mat", freq_iq_dir,nums);
+  snprintf(time_iq_dir, sizeof(time_iq_dir), "%s/RAWIQ/TIME", base_dir);
+  snprintf(freq_iq_dir, sizeof(freq_iq_dir), "%s/RAWIQ/FREQ", base_dir);
+  snprintf(dmrs_dir, sizeof(dmrs_dir), "%s/DMRS_IDEL", base_dir);
+  // snprintf(snr_dir, sizeof(snr_dir), "%s/SNR_IDEL", base_dir);
+  // snprintf(srs_dir, sizeof(srs_dir), "%s/SRS_IDEL", base_dir);
+  // --- 2. 自动创建目录 ---
+  create_directory_recursively(time_iq_dir);
+  create_directory_recursively(freq_iq_dir);
+  create_directory_recursively(dmrs_dir);
+  // create_directory_recursively(snr_dir);
+  // create_directory_recursively(srs_dir);
+  // --- 3. 保存时域数据 (rxdata) ---
+  const int32_t *rxdata_ptr =
+      &ru->common.rxdata[0][frame_parms->get_samples_slot_timestamp(slot_rx, frame_parms, 0) - ru->N_TA_offset];
+  size_t rxdata_samples = frame_parms->get_samples_per_slot(slot_rx, frame_parms);
+  char time_filename_fmt[300];
+  snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.mat", time_iq_dir, nums);
 
-    // 调用异步保存函数
-    save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums);
+  // 调用异步保存函数
+  save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums);
 
-    // --- 5. 保存DMRS序列 (从时域数据中提取) ---
-    // 为了提取DMRS，我们仍然需要将时域数据复制到debugBuff中
+  // --- 4. 保存频域数据 (rxdataF) ---
+  // 假设: rxdataF 包含了一个时隙的所有OFDM符号的频域数据
+  // 假设大小为: 14个符号 * ofdm符号大小
+  const int32_t *rxdataF_ptr =
+      &ru->common.rxdataF[0][frame_parms->get_samples_slot_timestamp(slot_rx & 3, frame_parms, 0)]; // 假设从天线0开始
+  size_t rxdataF_samples = frame_parms->get_samples_per_slot(slot_rx & 3, frame_parms); // 假设大小
+  char freq_filename_fmt[300];
+  snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.mat", freq_iq_dir, nums);
+
+  // 调用异步保存函数
+  save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums);
+
+  // --- 5. 保存DMRS序列 (从时域数据中提取) ---
+  // 为了提取DMRS，我们仍然需要将时域数据复制到debugBuff中
+  if (RC.rxcapture.cfg_sig == RXCAP_MSG3 || RC.rxcapture.cfg_sig == RXCAP_MSG5) {
     memcpy(gNB->common_vars.debugBuff, rxdata_ptr, rxdata_samples * sizeof(int32_t));
-    
-    // char filename_snr[300];
     char filename_dmrs[300];
     snprintf(filename_dmrs, sizeof(filename_dmrs), "%s/dmrs.txt", dmrs_dir);
-    // snprintf(filename_snr, sizeof(filename_snr), "%s/snr.txt", snr_dir);
-    // snprintf(filename_srs, sizeof(filename_srs), "%s/snr.txt", srs_dir);
-    // for (int k = 0; k < 3; k++)
-    // {
-      FILE *file = fopen(filename_dmrs, "a");
-      if (file == NULL) {
-          printf("无法打开文件 %s\n", filename_dmrs);
-      } else {
-          // 从debugBuff的特定偏移量处提取数据并写入文件
-          for(int i = 0; i < 160*6; i++){
-            // int16_t ii = (int16_t)(gNB->common_vars.debugBuff[50000+i+ k*80*6] >> 16);
-            // int16_t rr = (int16_t)(gNB->common_vars.debugBuff[50000+i+ k*80*6] & 0xFFFF);
-            // 高16 虚部 第16 real
-            int16_t ii = (int16_t)(gNB->common_vars.debugBuff[50000+i] >> 16);
-            int16_t rr = (int16_t)(gNB->common_vars.debugBuff[50000+i] & 0xFFFF);
-            fprintf(file, "%d,%d\n", rr, ii);
-          }
-          fclose(file);
+    FILE *file = fopen(filename_dmrs, "a");
+    if (file == NULL) {
+      printf("无法打开文件 %s\n", filename_dmrs);
+    } else {
+      // 从debugBuff的特定偏移量处提取数据并写入文件
+      for (int i = 0; i < 160 * 6; i++) {
+        // 高16 虚部 第16 real
+        int16_t ii = (int16_t)(gNB->common_vars.debugBuff[RC.rxcapture.cfg.debug_offset + i] >> 16);
+        int16_t rr = (int16_t)(gNB->common_vars.debugBuff[RC.rxcapture.cfg.debug_offset + i] & 0xFFFF);
+        fprintf(file, "%d,%d\n", rr, ii);
       }
-    // }
-    
-    // FILE *file = fopen(filename_snr, "a");
-    // if (file == NULL) {
-    //     printf("无法打开文件 %s\n", filename_snr);
-    // } else {
-    //     fprintf(file, "%d\n", (gNB->common_vars.debugBuff[60000]));
-    //     fclose(file);
-    // }
-    nums++; // 更新全局文件编号
+      fclose(file);
+    }
+  }
+  // char filename_snr[300];
+  // snprintf(filename_snr, sizeof(filename_snr), "%s/snr.txt", snr_dir);
+  // snprintf(filename_srs, sizeof(filename_srs), "%s/snr.txt", srs_dir);
+  // for (int k = 0; k < 3; k++)
+  // }
+
+  // FILE *file = fopen(filename_snr, "a");
+  // if (file == NULL) {
+  //     printf("无法打开文件 %s\n", filename_snr);
+  // } else {
+  //     fprintf(file, "%d\n", (gNB->common_vars.debugBuff[60000]));
+  //     fclose(file);
+  // }
+  nums++; // 更新全局文件编号
 }
 
+void *save_debugBuff_to_mat(void *args)
+{
+  if (args == NULL) {
+    printf("ERROR: Thread received NULL arguments. Exiting.\n");
+    return NULL;
+  }
+  ThreadArgs *thread_args = (ThreadArgs *)args;
+  int32_t *buffer = thread_args->buffer;
+  int num_samples = thread_args->num_samples;
+  const char *filename = thread_args->filename;
+  const char *varname = thread_args->varname;
+  // 参数检查
+  if (buffer == NULL || num_samples <= 0 || filename == NULL || varname == NULL) {
+    printf("Invalid parameters\n");
+    return NULL;
+  }
 
-void *save_debugBuff_to_mat(void *args) {
-   if (args == NULL) {
-        printf("ERROR: Thread received NULL arguments. Exiting.\n");
-        return NULL;
-    }
-    ThreadArgs *thread_args = (ThreadArgs *)args;
-    int32_t *buffer = thread_args->buffer;
-    int num_samples = thread_args->num_samples;
-    const char *filename = thread_args->filename;
-    const char *varname = thread_args->varname;
-    // 参数检查
-    if (buffer == NULL || num_samples <= 0 || filename == NULL || varname == NULL) {
-        printf("Invalid parameters\n");
-        return NULL;
-    }
-    
-    // 为复数数据分配内存，使用 int16_t 而不是 double
-    mat_complex_split_t complex_data;
-    int16_t *realPart = (int16_t *)malloc(num_samples * sizeof(int16_t));
-    int16_t *imagPart = (int16_t *)malloc(num_samples * sizeof(int16_t));
-    
-    if (realPart == NULL || imagPart == NULL) {
-        printf("Memory allocation failed\n");
-        free(realPart);
-        free(imagPart);
-        return NULL;
-    }
-    
-    // 将 int32_t IQ 数据提取为 int16_t，不转换为 double
-    for (int i = 0; i < num_samples; i++) {
-        // 提取 I 和 Q 部分 (有符号 16 位整数)
-        int16_t Q = (int16_t)(buffer[i] >> 16);    // 高 16 位为 Q
-        int16_t I = (int16_t)(buffer[i] & 0xFFFF); // 低 16 位为 I
-        
-        // 直接保存为 int16_t
-        realPart[i] = I;
-        imagPart[i] = Q;
-    }
-    
-    // 设置复数数据结构
-    complex_data.Re = realPart;
-    complex_data.Im = imagPart;
-    
-    // 设置矩阵维度 (num_samples 行，1 列)
-    size_t dims[2] = {num_samples, 1};
-    
-    // 创建 MAT 变量，使用 int16 类型
-    matvar_t *matvar = Mat_VarCreate(varname, MAT_C_INT16, MAT_T_INT16, 
-                                    2, dims, &complex_data, MAT_F_COMPLEX);
-    if (matvar == NULL) {
-        printf("Error creating MAT variable\n");
-        free(realPart);
-        free(imagPart);
-        return NULL;
-    }
-    
-    // 创建并写入 MAT 文件
-    mat_t *matfp = Mat_CreateVer(filename, NULL, MAT_FT_MAT5);
-    if (matfp == NULL) {
-        printf("Error creating MAT file: %s\n", filename);
-        Mat_VarFree(matvar);
-        free(realPart);
-        free(imagPart);
-        return NULL;
-    }
-    
-    // 写入变量到文件
-    int status = Mat_VarWrite(matfp, matvar, MAT_COMPRESSION_NONE);
-    if (status != 0) {
-        printf("Error writing to MAT file\n");
-        Mat_VarFree(matvar);
-        Mat_Close(matfp);
-        free(realPart);
-        free(imagPart);
-        return NULL;
-    }
-    
-    // 清理资源
+  // 为复数数据分配内存，使用 int16_t 而不是 double
+  mat_complex_split_t complex_data;
+  int16_t *realPart = (int16_t *)malloc(num_samples * sizeof(int16_t));
+  int16_t *imagPart = (int16_t *)malloc(num_samples * sizeof(int16_t));
+
+  if (realPart == NULL || imagPart == NULL) {
+    printf("Memory allocation failed\n");
+    free(realPart);
+    free(imagPart);
+    return NULL;
+  }
+
+  // 将 int32_t IQ 数据提取为 int16_t，不转换为 double
+  for (int i = 0; i < num_samples; i++) {
+    // 提取 I 和 Q 部分 (有符号 16 位整数)
+    int16_t Q = (int16_t)(buffer[i] >> 16); // 高 16 位为 Q
+    int16_t I = (int16_t)(buffer[i] & 0xFFFF); // 低 16 位为 I
+
+    // 直接保存为 int16_t
+    realPart[i] = I;
+    imagPart[i] = Q;
+  }
+
+  // 设置复数数据结构
+  complex_data.Re = realPart;
+  complex_data.Im = imagPart;
+
+  // 设置矩阵维度 (num_samples 行，1 列)
+  size_t dims[2] = {num_samples, 1};
+
+  // 创建 MAT 变量，使用 int16 类型
+  matvar_t *matvar = Mat_VarCreate(varname, MAT_C_INT16, MAT_T_INT16, 2, dims, &complex_data, MAT_F_COMPLEX);
+  if (matvar == NULL) {
+    printf("Error creating MAT variable\n");
+    free(realPart);
+    free(imagPart);
+    return NULL;
+  }
+
+  // 创建并写入 MAT 文件
+  mat_t *matfp = Mat_CreateVer(filename, NULL, MAT_FT_MAT5);
+  if (matfp == NULL) {
+    printf("Error creating MAT file: %s\n", filename);
+    Mat_VarFree(matvar);
+    free(realPart);
+    free(imagPart);
+    return NULL;
+  }
+
+  // 写入变量到文件
+  int status = Mat_VarWrite(matfp, matvar, MAT_COMPRESSION_NONE);
+  if (status != 0) {
+    printf("Error writing to MAT file\n");
     Mat_VarFree(matvar);
     Mat_Close(matfp);
     free(realPart);
     free(imagPart);
-
-    printf("IQ data successfully saved to %s with variable name '%s'\n", filename, varname);
-    free(thread_args->buffer);      // 释放数据副本
-    free(thread_args->filename);    // 释放文件名字符串
-    free(thread_args->varname);     // 释放变量名字符串
-    free(thread_args);              // 释放参数结构体本身
     return NULL;
+  }
+
+  // 清理资源
+  Mat_VarFree(matvar);
+  Mat_Close(matfp);
+  free(realPart);
+  free(imagPart);
+
+  printf("IQ data successfully saved to %s with variable name '%s'\n", filename, varname);
+  free(thread_args->buffer); // 释放数据副本
+  free(thread_args->filename); // 释放文件名字符串
+  free(thread_args->varname); // 释放变量名字符串
+  free(thread_args); // 释放参数结构体本身
+  return NULL;
 }

@@ -642,15 +642,6 @@ int main(int argc, char **argv)
       RCconfig_nr_prs();
   }
 
-  paramdef_t RxCaptureParams[] = {
-      {CONFIG_STRING_RXCAPTURE_ENABLE, 0, .uptr = &RC.rxcapture_cfg.enable, .defuintval = 0, TYPE_UINT, 0},
-      {CONFIG_STRING_RXCAPTURE_RX_SLOT, 0, .uptr = &RC.rxcapture_cfg.capture_slot, .defuintval = 7, TYPE_UINT, 0},
-      {CONFIG_STRING_RXCAPTURE_SIGNAL_TYPE, 0, .strptr = &RC.rxcapture_cfg.signal_type, .defstrval = "msg3", TYPE_STRING, 0},
-      {CONFIG_STRING_RXCAPTURE_OUTPUT_DIR, 0, .strptr = &RC.rxcapture_cfg.output_dir, .defstrval = "./", TYPE_STRING, 0},
-      {CONFIG_STRING_RXCAPTURE_DEBUG_OFFSET, 0, .uptr = &RC.rxcapture_cfg.debug_offset, .defuintval = 50000, TYPE_UINT, 0},
-  };
-
-  config_get(config_get_if(), RxCaptureParams, sizeofArray(RxCaptureParams), CONFIG_STRING_RXCAPTURE_CONFIG);
   LOG_I(PHY,
         "[RXCAPTURE] enable=%u slot=%u type=%s out=%s offset=%u\n",
         RC.rxcapture_cfg.enable,

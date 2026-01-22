@@ -49,6 +49,13 @@ struct gNB_MAC_INST_s;
 struct gtpv1u_data_s;
 struct RU_t_s;
 
+typedef enum {
+  RXCAP_NONE = 0,
+  RXCAP_MSG3,
+  RXCAP_MSG5,
+  RXCAP_SRS,
+} rxcapture_sig_t;
+
 typedef struct {
   uint32_t enable;
   uint32_t capture_slot; // 7/8/17
@@ -56,6 +63,10 @@ typedef struct {
   char *output_dir; // "./"
   uint32_t debug_offset; // 50000
 } rxcapture_cfg_t;
+typedef struct {
+  rxcapture_cfg_t cfg;
+  rxcapture_sig_t cfg_sig;
+} rxcapture_t;
 
 typedef struct {
   /// RAN context config file name
@@ -119,8 +130,8 @@ typedef struct {
   pthread_mutex_t ru_mutex;
   /// condition variable for signaling setup completion of an RU
   pthread_cond_t ru_cond;
-  int msg3_flag;
-  rxcapture_cfg_t rxcapture_cfg;
+  int capture_flag;
+  rxcapture_t rxcapture;
 } RAN_CONTEXT_t;
 
 extern RAN_CONTEXT_t RC;

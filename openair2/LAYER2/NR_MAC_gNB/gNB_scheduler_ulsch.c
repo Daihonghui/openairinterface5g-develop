@@ -28,7 +28,6 @@
  * @ingroup _mac
  */
 
-
 #include "LAYER2/NR_MAC_gNB/mac_proto.h"
 #include "executables/softmodem-common.h"
 #include "common/utils/nr/nr_common.h"
@@ -37,7 +36,7 @@
 #include "LAYER2/NR_MAC_COMMON/nr_mac_extern.h"
 #include "LAYER2/nr_rlc/nr_rlc_oai_api.h"
 #include "LAYER2/RLC/rlc.h"
-//#define SRS_IND_DEBUG
+// #define SRS_IND_DEBUG
 
 int get_ul_tda(gNB_MAC_INST *nrmac, int frame, int slot)
 {
@@ -57,9 +56,9 @@ int get_ul_tda(gNB_MAC_INST *nrmac, int frame, int slot)
   }
 
   // Avoid slots with the SRS
-  UE_iterator(nrmac->UE_info.list, UE) {
+  UE_iterator (nrmac->UE_info.list, UE) {
     NR_sched_srs_t sched_srs = UE->UE_sched_ctrl.sched_srs;
-    if(sched_srs.srs_scheduled && sched_srs.frame == frame && sched_srs.slot == slot)
+    if (sched_srs.srs_scheduled && sched_srs.frame == frame && sched_srs.slot == slot)
       return 1;
   }
 
@@ -71,11 +70,11 @@ static int compute_ph_factor(int mu, int tbs_bits, int rb, int n_layers, int n_s
   // 38.213 7.1.1
   // if the PUSCH transmission is over more than one layer delta_tf = 0
   float delta_tf = 0;
-  if(deltaMCS != NULL && n_layers == 1) {
+  if (deltaMCS != NULL && n_layers == 1) {
     const int n_re = (NR_NB_SC_PER_RB * n_symbols - n_dmrs) * rb;
-    const float BPRE = (float) tbs_bits/n_re;  //TODO change for PUSCH with CSI
+    const float BPRE = (float)tbs_bits / n_re; // TODO change for PUSCH with CSI
     const float f = pow(2, BPRE * 1.25);
-    const float beta = 1.0f; //TODO change for PUSCH with CSI
+    const float beta = 1.0f; // TODO change for PUSCH with CSI
     delta_tf = (10 * log10((f - 1) * beta));
     LOG_D(NR_MAC,
           "PH factor delta_tf %f (n_re %d, n_rb %d, n_dmrs %d, n_symbols %d, tbs %d BPRE %f f %f)\n",
@@ -130,11 +129,18 @@ static int estimate_ul_buffer_long_bsr(const NR_BSR_LONG *bsr)
         bsr->LcgID2,
         bsr->LcgID1,
         bsr->LcgID0);
-  bool bsr_active[8] = {bsr->LcgID0 != 0, bsr->LcgID1 != 0, bsr->LcgID2 != 0, bsr->LcgID3 != 0, bsr->LcgID4 != 0, bsr->LcgID5 != 0, bsr->LcgID6 != 0, bsr->LcgID7 != 0};
+  bool bsr_active[8] = {bsr->LcgID0 != 0,
+                        bsr->LcgID1 != 0,
+                        bsr->LcgID2 != 0,
+                        bsr->LcgID3 != 0,
+                        bsr->LcgID4 != 0,
+                        bsr->LcgID5 != 0,
+                        bsr->LcgID6 != 0,
+                        bsr->LcgID7 != 0};
 
   int estim_size = 0;
   int max = sizeofArray(NR_LONG_BSR_TABLE) - 1;
-  uint8_t *payload = ((uint8_t*) bsr) + 1;
+  uint8_t *payload = ((uint8_t *)bsr) + 1;
   int m = 0;
   const int total_lcgids = 8; /* see 38.321 6.1.3.1 */
   for (int n = 0; n < total_lcgids; n++) {
@@ -170,10 +176,12 @@ static int estimate_ul_buffer_long_bsr(const NR_BSR_LONG *bsr)
 //  |0|1|2|3|4|5|6|7|  bit-wise
 //  |R|R|   LCID    |
 //
-//  LCID: The Logical Channel ID field identifies the logical channel instance of the corresponding MAC SDU or the type of the corresponding MAC CE or padding as described in Tables 6.2.1-1 and 6.2.1-2 for the DL-SCH and UL-SCH respectively. There is one LCID field per MAC subheader. The LCID field size is 6 bits;
-//  L: The Length field indicates the length of the corresponding MAC SDU or variable-sized MAC CE in bytes. There is one L field per MAC subheader except for subheaders corresponding to fixed-sized MAC CEs and padding. The size of the L field is indicated by the F field;
-//  F: length of L is 0:8 or 1:16 bits wide
-//  R: Reserved bit, set to zero.
+//  LCID: The Logical Channel ID field identifies the logical channel instance of the corresponding MAC SDU or the type of the
+//  corresponding MAC CE or padding as described in Tables 6.2.1-1 and 6.2.1-2 for the DL-SCH and UL-SCH respectively. There is one
+//  LCID field per MAC subheader. The LCID field size is 6 bits; L: The Length field indicates the length of the corresponding MAC
+//  SDU or variable-sized MAC CE in bytes. There is one L field per MAC subheader except for subheaders corresponding to fixed-sized
+//  MAC CEs and padding. The size of the L field is indicated by the F field; F: length of L is 0:8 or 1:16 bits wide R: Reserved
+//  bit, set to zero.
 
 // return: length of subPdu header
 // 3GPP TS 38.321 Section 6
@@ -588,11 +596,7 @@ static bool get_UE_waiting_CFRA_msg3(const gNB_MAC_INST *gNB_mac,
   return UE_waiting_CFRA_msg3;
 }
 
-void handle_nr_ul_harq(const int CC_idP,
-                       module_id_t mod_id,
-                       frame_t frame,
-                       sub_frame_t slot,
-                       const nfapi_nr_crc_t *crc_pdu)
+void handle_nr_ul_harq(const int CC_idP, module_id_t mod_id, frame_t frame, sub_frame_t slot, const nfapi_nr_crc_t *crc_pdu)
 {
   gNB_MAC_INST *nrmac = RC.nrmac[mod_id];
   if (nrmac->radio_config.disable_harq) {
@@ -622,7 +626,7 @@ void handle_nr_ul_harq(const int CC_idP,
 
   NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
   int8_t harq_pid = sched_ctrl->feedback_ul_harq.head;
-  LOG_D(NR_MAC, "Comparing crc_pdu->harq_id vs feedback harq_pid = %d %d\n",crc_pdu->harq_id, harq_pid);
+  LOG_D(NR_MAC, "Comparing crc_pdu->harq_id vs feedback harq_pid = %d %d\n", crc_pdu->harq_id, harq_pid);
   while (crc_pdu->harq_id != harq_pid || harq_pid < 0) {
     LOG_W(NR_MAC, "Unexpected ULSCH HARQ PID %d (have %d) for RNTI 0x%04x\n", crc_pdu->harq_id, harq_pid, crc_pdu->rnti);
     if (harq_pid < 0) {
@@ -633,7 +637,7 @@ void handle_nr_ul_harq(const int CC_idP,
     remove_front_nr_list(&sched_ctrl->feedback_ul_harq);
     sched_ctrl->ul_harq_processes[harq_pid].is_waiting = false;
 
-    if(sched_ctrl->ul_harq_processes[harq_pid].round >= RC.nrmac[mod_id]->ul_bler.harq_round_max - 1) {
+    if (sched_ctrl->ul_harq_processes[harq_pid].round >= RC.nrmac[mod_id]->ul_bler.harq_round_max - 1) {
       abort_nr_ul_harq(UE, harq_pid);
     } else {
       sched_ctrl->ul_harq_processes[harq_pid].round++;
@@ -648,22 +652,13 @@ void handle_nr_ul_harq(const int CC_idP,
   harq->is_waiting = false;
   if (!crc_pdu->tb_crc_status) {
     finish_nr_ul_harq(sched_ctrl, harq_pid);
-    LOG_D(NR_MAC,
-          "Ulharq id %d crc passed for RNTI %04x\n",
-          harq_pid,
-          crc_pdu->rnti);
-  } else if (harq->round >= RC.nrmac[mod_id]->ul_bler.harq_round_max  - 1) {
+    LOG_D(NR_MAC, "Ulharq id %d crc passed for RNTI %04x\n", harq_pid, crc_pdu->rnti);
+  } else if (harq->round >= RC.nrmac[mod_id]->ul_bler.harq_round_max - 1) {
     abort_nr_ul_harq(UE, harq_pid);
-    LOG_D(NR_MAC,
-          "RNTI %04x: Ulharq id %d crc failed in all rounds\n",
-          crc_pdu->rnti,
-          harq_pid);
+    LOG_D(NR_MAC, "RNTI %04x: Ulharq id %d crc failed in all rounds\n", crc_pdu->rnti, harq_pid);
   } else {
     harq->round++;
-    LOG_D(NR_MAC,
-          "Ulharq id %d crc failed for RNTI %04x\n",
-          harq_pid,
-          crc_pdu->rnti);
+    LOG_D(NR_MAC, "Ulharq id %d crc failed for RNTI %04x\n", harq_pid, crc_pdu->rnti);
     add_tail_nr_list(&sched_ctrl->retrans_ul_harq, harq_pid);
   }
   NR_SCHED_UNLOCK(&nrmac->sched_lock);
@@ -690,8 +685,8 @@ static void handle_msg3_failed_rx(NR_RA_t *ra, int i, int harq_round_max)
 }
 
 /*
-* When data are received on PHY and transmitted to MAC
-*/
+ * When data are received on PHY and transmitted to MAC
+ */
 static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
                        const int CC_idP,
                        const frame_t frameP,
@@ -716,16 +711,21 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
   bool UE_waiting_CFRA_msg3 = get_UE_waiting_CFRA_msg3(gNB_mac, CC_idP, frameP, slotP, current_rnti);
 
   if (UE && UE_waiting_CFRA_msg3 == false) {
-
     NR_UE_sched_ctrl_t *UE_scheduling_control = &UE->UE_sched_ctrl;
 
     if (sduP)
-      T(T_GNB_MAC_UL_PDU_WITH_DATA, T_INT(gnb_mod_idP), T_INT(CC_idP),
-        T_INT(rntiP), T_INT(frameP), T_INT(slotP), T_INT(harq_pid),
+      T(T_GNB_MAC_UL_PDU_WITH_DATA,
+        T_INT(gnb_mod_idP),
+        T_INT(CC_idP),
+        T_INT(rntiP),
+        T_INT(frameP),
+        T_INT(slotP),
+        T_INT(harq_pid),
         T_BUFFER(sduP, sdu_lenP));
 
     UE->mac_stats.ul.total_bytes += sdu_lenP;
-    LOG_D(NR_MAC, "[gNB %d][PUSCH %d] CC_id %d %d.%d Received ULSCH sdu from PHY (rnti %04x) ul_cqi %d TA %d sduP %p, rssi %d\n",
+    LOG_D(NR_MAC,
+          "[gNB %d][PUSCH %d] CC_id %d %d.%d Received ULSCH sdu from PHY (rnti %04x) ul_cqi %d TA %d sduP %p, rssi %d\n",
           gnb_mod_idP,
           harq_pid,
           CC_idP,
@@ -775,11 +775,10 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
 
       NR_UE_ul_harq_t *cur_harq = &UE_scheduling_control->ul_harq_processes[harq_pid];
       if (cur_harq->round == 0)
-       UE->mac_stats.pusch_snrx10 = UE_scheduling_control->pusch_snrx10;
-      LOG_D(NR_MAC, "[UE %04x] PUSCH TPC %d and TA %d\n",UE->rnti,UE_scheduling_control->tpc0,UE_scheduling_control->ta_update);
-    }
-    else{
-      LOG_D(NR_MAC,"[UE %04x] Detected DTX : increasing UE TX power\n",UE->rnti);
+        UE->mac_stats.pusch_snrx10 = UE_scheduling_control->pusch_snrx10;
+      LOG_D(NR_MAC, "[UE %04x] PUSCH TPC %d and TA %d\n", UE->rnti, UE_scheduling_control->tpc0, UE_scheduling_control->ta_update);
+    } else {
+      LOG_D(NR_MAC, "[UE %04x] Detected DTX : increasing UE TX power\n", UE->rnti);
       UE_scheduling_control->tpc0 = 1;
     }
 
@@ -804,8 +803,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
         UE_scheduling_control->sched_ul_bytes = 0;
 
       nr_process_mac_pdu(gnb_mod_idP, UE, CC_idP, frameP, slotP, sduP, sdu_lenP, harq_pid);
-    }
-    else {
+    } else {
       if (ul_cqi == 0xff || ul_cqi <= 128) {
         UE->UE_sched_ctrl.pusch_consecutive_dtx_cnt++;
         UE->mac_stats.ulsch_DTX++;
@@ -820,7 +818,6 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
       }
     }
   } else if (sduP) {
-
     bool no_sig = true;
     for (uint32_t k = 0; k < sdu_lenP; k++) {
       if (sduP[k] != 0) {
@@ -829,10 +826,15 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
       }
     }
 
-    T(T_GNB_MAC_UL_PDU_WITH_DATA, T_INT(gnb_mod_idP), T_INT(CC_idP),
-      T_INT(rntiP), T_INT(frameP), T_INT(slotP), T_INT(-1) /* harq_pid */,
+    T(T_GNB_MAC_UL_PDU_WITH_DATA,
+      T_INT(gnb_mod_idP),
+      T_INT(CC_idP),
+      T_INT(rntiP),
+      T_INT(frameP),
+      T_INT(slotP),
+      T_INT(-1) /* harq_pid */,
       T_BUFFER(sduP, sdu_lenP));
-    
+
     /* we don't know this UE (yet). Check whether there is a ongoing RA (Msg 3)
      * and check the corresponding UE's RNTI match, in which case we activate
      * it. */
@@ -909,13 +911,12 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
         nr_clear_ra_proc(ra);
       } else {
         LOG_I(NR_MAC, "[RAPROC] Received %s:\n", ra->ra_type == RA_2_STEP ? "MsgA-PUSCH" : "Msg3");
-        LOG_A(NR_MAC,"SNR:%d\n",UE_scheduling_control->pusch_snrx10/10);
-        // asdasd
-        int snr_thr=15;
-        if ((UE_scheduling_control->pusch_snrx10/10)>=snr_thr) {
-              
-              printf("set RC.msg3_flag = 1\n");
-              RC.msg3_flag = 1;
+        if (RC.rxcapture.cfg_sig == RXCAP_MSG3) {
+          LOG_A(NR_MAC, "SNR:%d\n", UE_scheduling_control->pusch_snrx10 / 10);
+          if ((UE_scheduling_control->pusch_snrx10 / 10) >= 15) {
+            printf("set RC.capture_flag = 1\n");
+            RC.capture_flag = 1;
+          }
         }
         for (uint32_t k = 0; k < sdu_lenP; k++) {
           LOG_D(NR_MAC, "(%i): 0x%x\n", k, sduP[k]);
@@ -999,7 +1000,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
       if (ra->ra_state != nrRA_WAIT_Msg3)
         continue;
 
-      if((frameP!=ra->Msg3_frame) || (slotP!=ra->Msg3_slot))
+      if ((frameP != ra->Msg3_frame) || (slotP != ra->Msg3_slot))
         continue;
 
       if (ul_cqi != 0xff)
@@ -1033,51 +1034,51 @@ static uint32_t calc_power_complex(const int16_t *x, const int16_t *y, const uin
   // Real part value
   int64_t sum_x = 0;
   int64_t sum_x2 = 0;
-  for(int k = 0; k<size; k++) {
+  for (int k = 0; k < size; k++) {
     sum_x = sum_x + x[k];
-    sum_x2 = sum_x2 + x[k]*x[k];
+    sum_x2 = sum_x2 + x[k] * x[k];
   }
-  uint32_t power_re = sum_x2/size - (sum_x/size)*(sum_x/size);
+  uint32_t power_re = sum_x2 / size - (sum_x / size) * (sum_x / size);
 
   // Imaginary part power
   int64_t sum_y = 0;
   int64_t sum_y2 = 0;
-  for(int k = 0; k<size; k++) {
+  for (int k = 0; k < size; k++) {
     sum_y = sum_y + y[k];
-    sum_y2 = sum_y2 + y[k]*y[k];
+    sum_y2 = sum_y2 + y[k] * y[k];
   }
-  uint32_t power_im = sum_y2/size - (sum_y/size)*(sum_y/size);
+  uint32_t power_im = sum_y2 / size - (sum_y / size) * (sum_y / size);
 
-  return power_re+power_im;
+  return power_re + power_im;
 }
 
 static c16_t nr_h_times_w(c16_t h, char w)
 {
   c16_t output;
-    switch (w) {
-      case '0': // 0
-        output.r = 0;
-        output.i = 0;
-        break;
-      case '1': // 1
-        output.r = h.r;
-        output.i = h.i;
-        break;
-      case 'n': // -1
-        output.r = -h.r;
-        output.i = -h.i;
-        break;
-      case 'j': // j
-        output.r = -h.i;
-        output.i = h.r;
-        break;
-      case 'o': // -j
-        output.r = h.i;
-        output.i = -h.r;
-        break;
-      default:
-        AssertFatal(1==0,"Invalid precoder value %c\n", w);
-    }
+  switch (w) {
+    case '0': // 0
+      output.r = 0;
+      output.i = 0;
+      break;
+    case '1': // 1
+      output.r = h.r;
+      output.i = h.i;
+      break;
+    case 'n': // -1
+      output.r = -h.r;
+      output.i = -h.i;
+      break;
+    case 'j': // j
+      output.r = -h.i;
+      output.i = h.r;
+      break;
+    case 'o': // -j
+      output.r = h.i;
+      output.i = -h.r;
+      break;
+    default:
+      AssertFatal(1 == 0, "Invalid precoder value %c\n", w);
+  }
   return output;
 }
 
@@ -1088,8 +1089,7 @@ static uint8_t get_max_tpmi(const NR_PUSCH_Config_t *pusch_Config,
 {
   uint8_t max_tpmi = 0;
 
-  if (!pusch_Config
-      || (pusch_Config->txConfig != NULL && *pusch_Config->txConfig == NR_PUSCH_Config__txConfig_nonCodebook)
+  if (!pusch_Config || (pusch_Config->txConfig != NULL && *pusch_Config->txConfig == NR_PUSCH_Config__txConfig_nonCodebook)
       || num_ue_srs_ports == 1)
     return max_tpmi;
 
@@ -1098,9 +1098,9 @@ static uint8_t get_max_tpmi(const NR_PUSCH_Config_t *pusch_Config,
   long *codebookSubset = pusch_Config->codebookSubset;
 
   if (num_ue_srs_ports == 2) {
-
     if (max_rank == 1) {
-      if (ul_FullPowerTransmission && *ul_FullPowerTransmission == NR_PUSCH_Config__ext1__ul_FullPowerTransmission_r16_fullpowerMode1) {
+      if (ul_FullPowerTransmission
+          && *ul_FullPowerTransmission == NR_PUSCH_Config__ext1__ul_FullPowerTransmission_r16_fullpowerMode1) {
         max_tpmi = 2;
       } else {
         if (codebookSubset && *codebookSubset == NR_PUSCH_Config__codebookSubset_nonCoherent) {
@@ -1110,7 +1110,8 @@ static uint8_t get_max_tpmi(const NR_PUSCH_Config_t *pusch_Config,
         }
       }
     } else {
-      if (ul_FullPowerTransmission && *ul_FullPowerTransmission == NR_PUSCH_Config__ext1__ul_FullPowerTransmission_r16_fullpowerMode1) {
+      if (ul_FullPowerTransmission
+          && *ul_FullPowerTransmission == NR_PUSCH_Config__ext1__ul_FullPowerTransmission_r16_fullpowerMode1) {
         max_tpmi = *nrOfLayers == 1 ? 2 : 0;
       } else {
         if (codebookSubset && *codebookSubset == NR_PUSCH_Config__codebookSubset_nonCoherent) {
@@ -1122,9 +1123,9 @@ static uint8_t get_max_tpmi(const NR_PUSCH_Config_t *pusch_Config,
     }
 
   } else if (num_ue_srs_ports == 4) {
-
     if (max_rank == 1) {
-      if (ul_FullPowerTransmission && *ul_FullPowerTransmission == NR_PUSCH_Config__ext1__ul_FullPowerTransmission_r16_fullpowerMode1) {
+      if (ul_FullPowerTransmission
+          && *ul_FullPowerTransmission == NR_PUSCH_Config__ext1__ul_FullPowerTransmission_r16_fullpowerMode1) {
         if (codebookSubset && *codebookSubset == NR_PUSCH_Config__codebookSubset_nonCoherent) {
           max_tpmi = 3;
           *additional_max_tpmi = 13;
@@ -1141,7 +1142,8 @@ static uint8_t get_max_tpmi(const NR_PUSCH_Config_t *pusch_Config,
         }
       }
     } else {
-      if (ul_FullPowerTransmission && *ul_FullPowerTransmission == NR_PUSCH_Config__ext1__ul_FullPowerTransmission_r16_fullpowerMode1) {
+      if (ul_FullPowerTransmission
+          && *ul_FullPowerTransmission == NR_PUSCH_Config__ext1__ul_FullPowerTransmission_r16_fullpowerMode1) {
         if (max_rank == 2) {
           if (codebookSubset && *codebookSubset == NR_PUSCH_Config__codebookSubset_nonCoherent) {
             max_tpmi = *nrOfLayers == 1 ? 3 : 6;
@@ -1168,7 +1170,7 @@ static uint8_t get_max_tpmi(const NR_PUSCH_Config_t *pusch_Config,
                 max_tpmi = 0;
                 break;
               default:
-                LOG_E(NR_MAC,"Number of layers %d is invalid!\n", *nrOfLayers);
+                LOG_E(NR_MAC, "Number of layers %d is invalid!\n", *nrOfLayers);
             }
           } else {
             switch (*nrOfLayers) {
@@ -1183,7 +1185,7 @@ static uint8_t get_max_tpmi(const NR_PUSCH_Config_t *pusch_Config,
                 max_tpmi = 2;
                 break;
               default:
-                LOG_E(NR_MAC,"Number of layers %d is invalid!\n", *nrOfLayers);
+                LOG_E(NR_MAC, "Number of layers %d is invalid!\n", *nrOfLayers);
             }
           }
         }
@@ -1201,7 +1203,7 @@ static uint8_t get_max_tpmi(const NR_PUSCH_Config_t *pusch_Config,
               max_tpmi = 0;
               break;
             default:
-              LOG_E(NR_MAC,"Number of layers %d is invalid!\n", *nrOfLayers);
+              LOG_E(NR_MAC, "Number of layers %d is invalid!\n", *nrOfLayers);
           }
         } else if (codebookSubset && *codebookSubset == NR_PUSCH_Config__codebookSubset_partialAndNonCoherent) {
           switch (*nrOfLayers) {
@@ -1216,7 +1218,7 @@ static uint8_t get_max_tpmi(const NR_PUSCH_Config_t *pusch_Config,
               max_tpmi = 2;
               break;
             default:
-              LOG_E(NR_MAC,"Number of layers %d is invalid!\n", *nrOfLayers);
+              LOG_E(NR_MAC, "Number of layers %d is invalid!\n", *nrOfLayers);
           }
         } else {
           switch (*nrOfLayers) {
@@ -1233,12 +1235,11 @@ static uint8_t get_max_tpmi(const NR_PUSCH_Config_t *pusch_Config,
               max_tpmi = 5;
               break;
             default:
-              LOG_E(NR_MAC,"Number of layers %d is invalid!\n", *nrOfLayers);
+              LOG_E(NR_MAC, "Number of layers %d is invalid!\n", *nrOfLayers);
           }
         }
       }
     }
-
   }
 
   return max_tpmi;
@@ -1327,22 +1328,32 @@ static int nr_srs_tpmi_estimation(const NR_PUSCH_Config_t *pusch_Config,
             precoded_channel_matrix_im[index_gI_pI] += h_times_w.i;
 
 #ifdef SRS_IND_DEBUG
-            LOG_I(NR_MAC, "(pI %i, gI %i,  uI %i, layer_idx %i) w = %c, channel_matrix --> real %i, imag %i\n",
-                  pI, gI, uI, layer_idx, w, channel_matrix16[index].r, channel_matrix16[index].i);
+            LOG_I(NR_MAC,
+                  "(pI %i, gI %i,  uI %i, layer_idx %i) w = %c, channel_matrix --> real %i, imag %i\n",
+                  pI,
+                  gI,
+                  uI,
+                  layer_idx,
+                  w,
+                  channel_matrix16[index].r,
+                  channel_matrix16[index].i);
 #endif
           }
         }
 
 #ifdef SRS_IND_DEBUG
-        LOG_I(NR_MAC, "(pI %i, gI %i) precoded_channel_coef --> real %i, imag %i\n",
-              pI, gI, precoded_channel_matrix_re[index_gI_pI], precoded_channel_matrix_im[index_gI_pI]);
+        LOG_I(NR_MAC,
+              "(pI %i, gI %i) precoded_channel_coef --> real %i, imag %i\n",
+              pI,
+              gI,
+              precoded_channel_matrix_re[index_gI_pI],
+              precoded_channel_matrix_im[index_gI_pI]);
 #endif
       }
     }
 
-    uint32_t precoded_signal_power = calc_power_complex(precoded_channel_matrix_re,
-                                                        precoded_channel_matrix_im,
-                                                        num_prgs * num_gnb_antenna_elements);
+    uint32_t precoded_signal_power =
+        calc_power_complex(precoded_channel_matrix_re, precoded_channel_matrix_im, num_prgs * num_gnb_antenna_elements);
 
 #ifdef SRS_IND_DEBUG
     LOG_I(NR_MAC, "(tpmi %i) precoded_signal_power = %i\n", tpmi, precoded_signal_power);
@@ -1450,7 +1461,9 @@ void handle_nr_srs_measurements(const module_id_t module_id,
                                                  sizeof(nfapi_nr_srs_normalized_channel_iq_matrix_t));
 
 #ifdef SRS_IND_DEBUG
-      LOG_I(NR_MAC, "nr_srs_channel_iq_matrix.normalized_iq_representation = %i\n", nr_srs_channel_iq_matrix.normalized_iq_representation);
+      LOG_I(NR_MAC,
+            "nr_srs_channel_iq_matrix.normalized_iq_representation = %i\n",
+            nr_srs_channel_iq_matrix.normalized_iq_representation);
       LOG_I(NR_MAC, "nr_srs_channel_iq_matrix.num_gnb_antenna_elements = %i\n", nr_srs_channel_iq_matrix.num_gnb_antenna_elements);
       LOG_I(NR_MAC, "nr_srs_channel_iq_matrix.num_ue_srs_ports = %i\n", nr_srs_channel_iq_matrix.num_ue_srs_ports);
       LOG_I(NR_MAC, "nr_srs_channel_iq_matrix.prg_size = %i\n", nr_srs_channel_iq_matrix.prg_size);
@@ -1460,14 +1473,16 @@ void handle_nr_srs_measurements(const module_id_t module_id,
       for (int uI = 0; uI < nr_srs_channel_iq_matrix.num_ue_srs_ports; uI++) {
         for (int gI = 0; gI < nr_srs_channel_iq_matrix.num_gnb_antenna_elements; gI++) {
           for (int pI = 0; pI < nr_srs_channel_iq_matrix.num_prgs; pI++) {
-            uint16_t index = uI * nr_srs_channel_iq_matrix.num_gnb_antenna_elements * nr_srs_channel_iq_matrix.num_prgs + gI * nr_srs_channel_iq_matrix.num_prgs + pI;
-            LOG_I(NR_MAC,
-                  "(uI %i, gI %i, pI %i) channel_matrix --> real %i, imag %i\n",
-                  uI,
-                  gI,
-                  pI,
-                  nr_srs_channel_iq_matrix.normalized_iq_representation == 0 ? channel_matrix8[index].r : channel_matrix16[index].r,
-                  nr_srs_channel_iq_matrix.normalized_iq_representation == 0 ? channel_matrix8[index].i : channel_matrix16[index].i);
+            uint16_t index = uI * nr_srs_channel_iq_matrix.num_gnb_antenna_elements * nr_srs_channel_iq_matrix.num_prgs
+                             + gI * nr_srs_channel_iq_matrix.num_prgs + pI;
+            LOG_I(
+                NR_MAC,
+                "(uI %i, gI %i, pI %i) channel_matrix --> real %i, imag %i\n",
+                uI,
+                gI,
+                pI,
+                nr_srs_channel_iq_matrix.normalized_iq_representation == 0 ? channel_matrix8[index].r : channel_matrix16[index].r,
+                nr_srs_channel_iq_matrix.normalized_iq_representation == 0 ? channel_matrix8[index].i : channel_matrix16[index].i);
           }
         }
       }
@@ -1537,7 +1552,7 @@ static bool nr_UE_is_to_be_scheduled(const frame_structure_t *fs,
   const int n = fs->numb_slots_frame;
   const int now = frame * n + slot;
 
-  const NR_UE_sched_ctrl_t *sched_ctrl =&UE->UE_sched_ctrl;
+  const NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
   /**
    * Force the default transmission in a full slot as early
    * as possible in the UL portion of TDD period (last_ul_slot) */
@@ -1551,13 +1566,7 @@ static bool nr_UE_is_to_be_scheduled(const frame_structure_t *fs,
    * (3) or we did not schedule it in more than 10 frames */
   const bool has_data = sched_ctrl->estimated_ul_buffer > sched_ctrl->sched_ul_bytes;
   const bool high_inactivity = diff >= (ulsch_max_frame_inactivity > 0 ? ulsch_max_frame_inactivity * n : num_slots_per_period);
-  LOG_D(NR_MAC,
-        "%4d.%2d UL inactivity %d slots has_data %d SR %d\n",
-        frame,
-        slot,
-        diff,
-        has_data,
-        sched_ctrl->SR);
+  LOG_D(NR_MAC, "%4d.%2d UL inactivity %d slots has_data %d SR %d\n", frame, slot, diff, has_data, sched_ctrl->SR);
   return has_data || sched_ctrl->SR || high_inactivity;
 }
 
@@ -1590,12 +1599,14 @@ static void nr_ue_max_mcs_min_rb(int mu,
   update_ul_ue_R_Qm(*mcs, ul_bwp->mcs_table, ul_bwp->pusch_Config, &R, &Qm);
 
   long *deltaMCS = ul_bwp->pusch_Config ? ul_bwp->pusch_Config->pusch_PowerControl->deltaMCS : NULL;
-  tbs_bits = nr_compute_tbs(Qm, R, *Rb,
-                              sched_pusch->tda_info.nrOfSymbols,
-                              sched_pusch->dmrs_info.N_PRB_DMRS * sched_pusch->dmrs_info.num_dmrs_symb,
-                              0, // nb_rb_oh
-                              0,
-                              sched_pusch->nrOfLayers);
+  tbs_bits = nr_compute_tbs(Qm,
+                            R,
+                            *Rb,
+                            sched_pusch->tda_info.nrOfSymbols,
+                            sched_pusch->dmrs_info.N_PRB_DMRS * sched_pusch->dmrs_info.num_dmrs_symb,
+                            0, // nb_rb_oh
+                            0,
+                            sched_pusch->nrOfLayers);
 
   int tx_power = compute_ph_factor(mu,
                                    tbs_bits,
@@ -1608,7 +1619,9 @@ static void nr_ue_max_mcs_min_rb(int mu,
 
   while (ph_limit < tx_power && *Rb > minRb) {
     (*Rb)--;
-    tbs_bits = nr_compute_tbs(Qm, R, *Rb,
+    tbs_bits = nr_compute_tbs(Qm,
+                              R,
+                              *Rb,
                               sched_pusch->tda_info.nrOfSymbols,
                               sched_pusch->dmrs_info.N_PRB_DMRS * sched_pusch->dmrs_info.num_dmrs_symb,
                               0, // nb_rb_oh
@@ -1622,13 +1635,15 @@ static void nr_ue_max_mcs_min_rb(int mu,
                                  sched_pusch->dmrs_info.N_PRB_DMRS * sched_pusch->dmrs_info.num_dmrs_symb,
                                  deltaMCS,
                                  true);
-    LOG_D(NR_MAC, "Checking %d RBs, MCS %d, ph_limit %d, tx_power %d\n",*Rb,*mcs,ph_limit,tx_power);
+    LOG_D(NR_MAC, "Checking %d RBs, MCS %d, ph_limit %d, tx_power %d\n", *Rb, *mcs, ph_limit, tx_power);
   }
 
   while (ph_limit < tx_power && *mcs > 0) {
     (*mcs)--;
     update_ul_ue_R_Qm(*mcs, ul_bwp->mcs_table, ul_bwp->pusch_Config, &R, &Qm);
-    tbs_bits = nr_compute_tbs(Qm, R, *Rb,
+    tbs_bits = nr_compute_tbs(Qm,
+                              R,
+                              *Rb,
                               sched_pusch->tda_info.nrOfSymbols,
                               sched_pusch->dmrs_info.N_PRB_DMRS * sched_pusch->dmrs_info.num_dmrs_symb,
                               0, // nb_rb_oh
@@ -1642,24 +1657,28 @@ static void nr_ue_max_mcs_min_rb(int mu,
                                  sched_pusch->dmrs_info.N_PRB_DMRS * sched_pusch->dmrs_info.num_dmrs_symb,
                                  deltaMCS,
                                  true);
-    LOG_D(NR_MAC, "Checking %d RBs, MCS %d, ph_limit %d, tx_power %d\n",*Rb,*mcs,ph_limit,tx_power);
+    LOG_D(NR_MAC, "Checking %d RBs, MCS %d, ph_limit %d, tx_power %d\n", *Rb, *mcs, ph_limit, tx_power);
   }
 
   if (ph_limit < tx_power)
-    LOG_D(NR_MAC, "Normalized power %d based on current resources (RBs %d, MCS %d) exceed reported PHR %d (normalized value)\n",
-          tx_power, *Rb, *mcs, ph_limit);
+    LOG_D(NR_MAC,
+          "Normalized power %d based on current resources (RBs %d, MCS %d) exceed reported PHR %d (normalized value)\n",
+          tx_power,
+          *Rb,
+          *mcs,
+          ph_limit);
 }
 
 static bool allocate_ul_retransmission(gNB_MAC_INST *nrmac,
-				       frame_t frame,
-				       sub_frame_t slot,
-				       uint16_t *rballoc_mask,
-				       int *n_rb_sched,
-				       int dci_beam_idx,
-				       NR_UE_info_t* UE,
-				       int harq_pid,
-				       const NR_ServingCellConfigCommon_t *scc,
-				       const int tda)
+                                       frame_t frame,
+                                       sub_frame_t slot,
+                                       uint16_t *rballoc_mask,
+                                       int *n_rb_sched,
+                                       int dci_beam_idx,
+                                       NR_UE_info_t *UE,
+                                       int harq_pid,
+                                       const NR_ServingCellConfigCommon_t *scc,
+                                       const int tda)
 {
   const int CC_id = 0;
   NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
@@ -1670,8 +1689,8 @@ static bool allocate_ul_retransmission(gNB_MAC_INST *nrmac,
   const uint32_t bwpSize = ul_bwp->BWPSize;
   const uint32_t bwpStart = ul_bwp->BWPStart;
   const uint8_t nrOfLayers = retInfo->nrOfLayers;
-  LOG_D(NR_MAC,"retInfo->time_domain_allocation = %d, tda = %d\n", retInfo->time_domain_allocation, tda);
-  LOG_D(NR_MAC,"tbs %d\n",retInfo->tb_size);
+  LOG_D(NR_MAC, "retInfo->time_domain_allocation = %d, tda = %d\n", retInfo->time_domain_allocation, tda);
+  LOG_D(NR_MAC, "tbs %d\n", retInfo->tb_size);
   NR_tda_info_t tda_info = get_ul_tda_info(ul_bwp,
                                            sched_ctrl->coreset->controlResourceSetId,
                                            sched_ctrl->search_space->searchSpaceType->present,
@@ -1680,14 +1699,16 @@ static bool allocate_ul_retransmission(gNB_MAC_INST *nrmac,
   if (!tda_info.valid_tda)
     return false;
 
-  bool reuse_old_tda = (retInfo->tda_info.startSymbolIndex == tda_info.startSymbolIndex) && (retInfo->tda_info.nrOfSymbols <= tda_info.nrOfSymbols);
+  bool reuse_old_tda =
+      (retInfo->tda_info.startSymbolIndex == tda_info.startSymbolIndex) && (retInfo->tda_info.nrOfSymbols <= tda_info.nrOfSymbols);
   if (reuse_old_tda && nrOfLayers == retInfo->nrOfLayers) {
     /* Check the resource is enough for retransmission */
     const uint16_t slbitmap = SL_to_bitmap(retInfo->tda_info.startSymbolIndex, retInfo->tda_info.nrOfSymbols);
     while (rbStart < bwpSize && (rballoc_mask[rbStart + bwpStart] & slbitmap))
       rbStart++;
     if (rbStart + retInfo->rbSize > bwpSize) {
-      LOG_D(NR_MAC, "[UE %04x][%4d.%2d] could not allocate UL retransmission: no resources (rbStart %d, retInfo->rbSize %d, bwpSize %d) \n",
+      LOG_D(NR_MAC,
+            "[UE %04x][%4d.%2d] could not allocate UL retransmission: no resources (rbStart %d, retInfo->rbSize %d, bwpSize %d) \n",
             UE->rnti,
             frame,
             slot,
@@ -1721,7 +1742,8 @@ static bool allocate_ul_retransmission(gNB_MAC_INST *nrmac,
                                  &new_tbs,
                                  &new_rbSize);
     if (!success || new_tbs != retInfo->tb_size) {
-      LOG_D(NR_MAC, "[UE %04x][%4d.%2d] allocation of UL retransmission failed: new TBsize %d of new TDA does not match old TBS %d \n",
+      LOG_D(NR_MAC,
+            "[UE %04x][%4d.%2d] allocation of UL retransmission failed: new TBsize %d of new TDA does not match old TBS %d \n",
             UE->rnti,
             frame,
             slot,
@@ -1729,7 +1751,12 @@ static bool allocate_ul_retransmission(gNB_MAC_INST *nrmac,
             retInfo->tb_size);
       return false; /* the maximum TBsize we might have is smaller than what we need */
     }
-    LOG_D(NR_MAC, "Retransmission with TDA %d->%d and TBS %d -> %d\n", retInfo->time_domain_allocation, tda, retInfo->tb_size, new_tbs);
+    LOG_D(NR_MAC,
+          "Retransmission with TDA %d->%d and TBS %d -> %d\n",
+          retInfo->time_domain_allocation,
+          tda,
+          retInfo->tb_size,
+          new_tbs);
     /* we can allocate it. Overwrite the time_domain_allocation, the number
      * of RBs, and the new TB size. The rest is done below */
     retInfo->tb_size = new_tbs;
@@ -1751,7 +1778,7 @@ static bool allocate_ul_retransmission(gNB_MAC_INST *nrmac,
                                &sched_ctrl->sched_pdcch,
                                false,
                                sched_ctrl->pdcch_cl_adjust);
-  if (CCEIndex<0) {
+  if (CCEIndex < 0) {
     LOG_D(NR_MAC, "[UE %04x][%4d.%2d] no free CCE for retransmission UL DCI UE\n", UE->rnti, frame, slot);
     return false;
   }
@@ -1780,18 +1807,20 @@ static bool allocate_ul_retransmission(gNB_MAC_INST *nrmac,
   /* Mark the corresponding RBs as used */
   n_rb_sched -= sched_pusch->rbSize;
   for (int rb = bwpStart; rb < sched_ctrl->sched_pusch.rbSize; rb++)
-    rballoc_mask[rb + sched_ctrl->sched_pusch.rbStart] |= SL_to_bitmap(sched_pusch->tda_info.startSymbolIndex, sched_pusch->tda_info.nrOfSymbols);
+    rballoc_mask[rb + sched_ctrl->sched_pusch.rbStart] |=
+        SL_to_bitmap(sched_pusch->tda_info.startSymbolIndex, sched_pusch->tda_info.nrOfSymbols);
   return true;
 }
 
 static uint32_t ul_pf_tbs[5][29]; // pre-computed, approximate TBS values for PF coefficient
 typedef struct UEsched_s {
   float coef;
-  NR_UE_info_t * UE;
+  NR_UE_info_t *UE;
 } UEsched_t;
 
-static int comparator(const void *p, const void *q) {
-  return ((UEsched_t*)p)->coef < ((UEsched_t*)q)->coef;
+static int comparator(const void *p, const void *q)
+{
+  return ((UEsched_t *)p)->coef < ((UEsched_t *)q)->coef;
 }
 
 static void pf_ul(module_id_t module_id,
@@ -1817,13 +1846,12 @@ static void pf_ul(module_id_t module_id,
   int curUE = 0;
 
   /* Loop UE_list to calculate throughput and coeff */
-  UE_iterator(UE_list, UE) {
-
+  UE_iterator (UE_list, UE) {
     NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
     if (!UE->Msg4_MsgB_ACKed || sched_ctrl->ul_failure)
       continue;
 
-    LOG_D(NR_MAC,"pf_ul: preparing UL scheduling for UE %04x\n",UE->rnti);
+    LOG_D(NR_MAC, "pf_ul: preparing UL scheduling for UE %04x\n", UE->rnti);
     NR_UE_UL_BWP_t *current_BWP = &UE->current_UL_BWP;
 
     NR_sched_pusch_t *sched_pusch = &sched_ctrl->sched_pusch;
@@ -1846,7 +1874,8 @@ static void pf_ul(module_id_t module_id,
       continue;
     }
 
-    NR_beam_alloc_t beam = beam_allocation_procedure(&nrmac->beam_info, sched_frame, sched_slot, UE->UE_beam_index, slots_per_frame);
+    NR_beam_alloc_t beam =
+        beam_allocation_procedure(&nrmac->beam_info, sched_frame, sched_slot, UE->UE_beam_index, slots_per_frame);
     if (beam.idx < 0) {
       LOG_D(NR_MAC, "[UE %04x][%4d.%2d] Beam could not be allocated\n", UE->rnti, frame, slot);
       reset_beam_status(&nrmac->beam_info, frame, slot, UE->UE_beam_index, slots_per_frame, dci_beam.new_beam);
@@ -1857,7 +1886,7 @@ static void pf_ul(module_id_t module_id,
 
     /* Check if retransmission is necessary */
     sched_pusch->ul_harq_pid = sched_ctrl->retrans_ul_harq.head;
-    LOG_D(NR_MAC,"pf_ul: UE %04x harq_pid %d\n", UE->rnti, sched_pusch->ul_harq_pid);
+    LOG_D(NR_MAC, "pf_ul: UE %04x harq_pid %d\n", UE->rnti, sched_pusch->ul_harq_pid);
     if (sched_pusch->ul_harq_pid >= 0) {
       /* Allocate retransmission*/
       const int tda = get_ul_tda(nrmac, sched_frame, sched_slot);
@@ -1876,9 +1905,8 @@ static void pf_ul(module_id_t module_id,
         reset_beam_status(&nrmac->beam_info, sched_frame, sched_slot, UE->UE_beam_index, slots_per_frame, beam.new_beam);
         reset_beam_status(&nrmac->beam_info, frame, slot, UE->UE_beam_index, slots_per_frame, dci_beam.new_beam);
         continue;
-      }
-      else
-        LOG_D(NR_MAC,"%4d.%2d UL Retransmission UE RNTI %04x to be allocated, max_num_ue %d\n", frame, slot, UE->rnti,max_num_ue);
+      } else
+        LOG_D(NR_MAC, "%4d.%2d UL Retransmission UE RNTI %04x to be allocated, max_num_ue %d\n", frame, slot, UE->rnti, max_num_ue);
 
       /* reduce max_num_ue once we are sure UE can be allocated, i.e., has CCE */
       remainUEs[beam.idx]--;
@@ -1897,13 +1925,10 @@ static void pf_ul(module_id_t module_id,
 
     const int B = max(0, sched_ctrl->estimated_ul_buffer - sched_ctrl->sched_ul_bytes);
     /* preprocessor computed sched_frame/sched_slot */
-    const bool do_sched = nr_UE_is_to_be_scheduled(&nrmac->frame_structure,
-                                                   UE,
-                                                   sched_frame,
-                                                   sched_slot,
-                                                   nrmac->ulsch_max_frame_inactivity);
+    const bool do_sched =
+        nr_UE_is_to_be_scheduled(&nrmac->frame_structure, UE, sched_frame, sched_slot, nrmac->ulsch_max_frame_inactivity);
 
-    LOG_D(NR_MAC,"pf_ul: do_sched UE %04x => %s\n", UE->rnti, do_sched ? "yes" : "no");
+    LOG_D(NR_MAC, "pf_ul: do_sched UE %04x => %s\n", UE->rnti, do_sched ? "yes" : "no");
     if ((B == 0 && !do_sched) || nr_timer_is_active(&sched_ctrl->transm_interrupt)) {
       reset_beam_status(&nrmac->beam_info, sched_frame, sched_slot, UE->UE_beam_index, slots_per_frame, beam.new_beam);
       reset_beam_status(&nrmac->beam_info, frame, slot, UE->UE_beam_index, slots_per_frame, dci_beam.new_beam);
@@ -1918,7 +1943,7 @@ static void pf_ul(module_id_t module_id,
       sched_ctrl->ul_bler_stats.mcs = sched_pusch->mcs;
     } else {
       sched_pusch->mcs = get_mcs_from_bler(bo, stats, &sched_ctrl->ul_bler_stats, max_mcs, frame);
-      LOG_D(NR_MAC,"%d.%d starting mcs %d bleri %f\n", frame, slot, sched_pusch->mcs, sched_ctrl->ul_bler_stats.bler);
+      LOG_D(NR_MAC, "%d.%d starting mcs %d bleri %f\n", frame, slot, sched_pusch->mcs, sched_ctrl->ul_bler_stats.bler);
     }
     /* Schedule UE on SR or UL inactivity and no data (otherwise, will be scheduled
      * based on data to transmit) */
@@ -1926,7 +1951,9 @@ static void pf_ul(module_id_t module_id,
       /* if no data, pre-allocate 5RB */
       /* Find a free CCE */
       int CCEIndex = get_cce_index(nrmac,
-                                   CC_id, slot, UE->rnti,
+                                   CC_id,
+                                   slot,
+                                   UE->rnti,
                                    &sched_ctrl->aggregation_level,
                                    dci_beam.idx,
                                    sched_ctrl->search_space,
@@ -1949,9 +1976,8 @@ static void pf_ul(module_id_t module_id,
                                               TYPE_C_RNTI_,
                                               sched_pusch->time_domain_allocation);
       AssertFatal(sched_pusch->tda_info.valid_tda, "Invalid TDA from get_ul_tda_info\n");
- 
+
       sched_pusch->dmrs_info = get_ul_dmrs_params(scc, current_BWP, &sched_pusch->tda_info, sched_pusch->nrOfLayers);
-      
 
       int rbStart = 0; // wrt BWP start
       LOG_D(NR_MAC,
@@ -1995,7 +2021,8 @@ static void pf_ul(module_id_t module_id,
                                             sched_pusch->dmrs_info.N_PRB_DMRS * sched_pusch->dmrs_info.num_dmrs_symb,
                                             0, // nb_rb_oh
                                             0,
-                                            sched_pusch->nrOfLayers) >> 3;
+                                            sched_pusch->nrOfLayers)
+                             >> 3;
       long *deltaMCS = current_BWP->pusch_Config ? current_BWP->pusch_Config->pusch_PowerControl->deltaMCS : NULL;
 
       sched_pusch->phr_txpower_calc = compute_ph_factor(current_BWP->scs,
@@ -2028,8 +2055,9 @@ static void pf_ul(module_id_t module_id,
     /* Create UE_sched for UEs eligibale for new data transmission*/
     /* Calculate coefficient*/
     const uint32_t tbs = ul_pf_tbs[current_BWP->mcs_table][sched_pusch->mcs];
-    float coeff_ue = (float) tbs / UE->ul_thr_ue;
-    LOG_D(NR_MAC, "[UE %04x][%4d.%2d] b %d, ul_thr_ue %f, tbs %d, coeff_ue %f\n",
+    float coeff_ue = (float)tbs / UE->ul_thr_ue;
+    LOG_D(NR_MAC,
+          "[UE %04x][%4d.%2d] b %d, ul_thr_ue %f, tbs %d, coeff_ue %f\n",
           UE->rnti,
           frame,
           slot,
@@ -2043,7 +2071,7 @@ static void pf_ul(module_id_t module_id,
   }
 
   qsort(UE_sched, sizeofArray(UE_sched), sizeof(UEsched_t), comparator);
-  UEsched_t *iterator=UE_sched;
+  UEsched_t *iterator = UE_sched;
 
   /* Loop UE_sched to find max coeff and allocate transmission */
   while (iterator->UE != NULL) {
@@ -2051,7 +2079,8 @@ static void pf_ul(module_id_t module_id,
     NR_UE_sched_ctrl_t *sched_ctrl = &iterator->UE->UE_sched_ctrl;
     NR_sched_pusch_t *sched_pusch = &sched_ctrl->sched_pusch;
 
-    NR_beam_alloc_t beam = beam_allocation_procedure(&nrmac->beam_info, sched_frame, sched_slot, iterator->UE->UE_beam_index, slots_per_frame);
+    NR_beam_alloc_t beam =
+        beam_allocation_procedure(&nrmac->beam_info, sched_frame, sched_slot, iterator->UE->UE_beam_index, slots_per_frame);
     if (beam.idx < 0) {
       LOG_D(NR_MAC, "[UE %04x][%4d.%2d] Beam could not be allocated\n", iterator->UE->rnti, frame, slot);
       iterator++;
@@ -2064,7 +2093,8 @@ static void pf_ul(module_id_t module_id,
       continue;
     }
 
-    NR_beam_alloc_t dci_beam = beam_allocation_procedure(&nrmac->beam_info, frame, slot, iterator->UE->UE_beam_index, slots_per_frame);
+    NR_beam_alloc_t dci_beam =
+        beam_allocation_procedure(&nrmac->beam_info, frame, slot, iterator->UE->UE_beam_index, slots_per_frame);
     if (dci_beam.idx < 0) {
       LOG_D(NR_MAC, "[UE %04x][%4d.%2d] Beam could not be allocated\n", iterator->UE->rnti, frame, slot);
       reset_beam_status(&nrmac->beam_info, sched_frame, sched_slot, iterator->UE->UE_beam_index, slots_per_frame, beam.new_beam);
@@ -2073,7 +2103,9 @@ static void pf_ul(module_id_t module_id,
     }
 
     int CCEIndex = get_cce_index(nrmac,
-                                 CC_id, slot, iterator->UE->rnti,
+                                 CC_id,
+                                 slot,
+                                 iterator->UE->rnti,
                                  &sched_ctrl->aggregation_level,
                                  dci_beam.idx,
                                  sched_ctrl->search_space,
@@ -2088,11 +2120,8 @@ static void pf_ul(module_id_t module_id,
       LOG_D(NR_MAC, "[UE %04x][%4d.%2d] no free CCE for UL DCI\n", iterator->UE->rnti, frame, slot);
       iterator++;
       continue;
-    }
-    else
+    } else
       LOG_D(NR_MAC, "%4d.%2d free CCE for UL DCI UE %04x\n", frame, slot, iterator->UE->rnti);
-
-
 
     sched_pusch->nrOfLayers = sched_ctrl->srs_feedback.ul_ri + 1;
     sched_pusch->time_domain_allocation = get_ul_tda(nrmac, sched_frame, sched_slot);
@@ -2121,7 +2150,8 @@ static void pf_ul(module_id_t module_id,
     if (rbStart + min_rb >= bwpSize || max_rbSize < min_rb) {
       reset_beam_status(&nrmac->beam_info, frame, slot, iterator->UE->UE_beam_index, slots_per_frame, dci_beam.new_beam);
       reset_beam_status(&nrmac->beam_info, sched_frame, sched_slot, iterator->UE->UE_beam_index, slots_per_frame, beam.new_beam);
-      LOG_D(NR_MAC, "[UE %04x][%4d.%2d] could not allocate UL data: no resources (rbStart %d, min_rb %d, bwpSize %d)\n",
+      LOG_D(NR_MAC,
+            "[UE %04x][%4d.%2d] could not allocate UL data: no resources (rbStart %d, min_rb %d, bwpSize %d)\n",
             iterator->UE->rnti,
             frame,
             slot,
@@ -2142,7 +2172,7 @@ static void pf_ul(module_id_t module_id,
     /* Calculate the current scheduling bytes */
     const int B = cmax(sched_ctrl->estimated_ul_buffer - sched_ctrl->sched_ul_bytes, 0);
     /* adjust rbSize and MCS according to PHR and BPRE */
-    if(sched_ctrl->pcmax != 0 || sched_ctrl->ph != 0) // verify if the PHR related parameter have been initialized
+    if (sched_ctrl->pcmax != 0 || sched_ctrl->ph != 0) // verify if the PHR related parameter have been initialized
       nr_ue_max_mcs_min_rb(current_BWP->scs, sched_ctrl->ph, sched_pusch, current_BWP, min_rb, B, &max_rbSize, &sched_pusch->mcs);
 
     if (sched_pusch->mcs < sched_ctrl->ul_bler_stats.mcs)
@@ -2216,7 +2246,9 @@ static bool nr_ulsch_preprocessor(module_id_t module_id, frame_t frame, sub_fram
 
   NR_COMMON_channels_t *cc = nr_mac->common_channels;
   NR_ServingCellConfigCommon_t *scc = cc->ServingCellConfigCommon;
-  const NR_SIB1_t *sib1 = nr_mac->common_channels[0].sib1 ? nr_mac->common_channels[0].sib1->message.choice.c1->choice.systemInformationBlockType1 : NULL;
+  const NR_SIB1_t *sib1 = nr_mac->common_channels[0].sib1
+                              ? nr_mac->common_channels[0].sib1->message.choice.c1->choice.systemInformationBlockType1
+                              : NULL;
   NR_ServingCellConfigCommonSIB_t *scc_sib1 = sib1 ? sib1->servingCellConfigCommon : NULL;
   AssertFatal(scc || scc_sib1, "We need one serving cell config common\n");
   const int slots_frame = nr_mac->frame_structure.numb_slots_frame;
@@ -2298,10 +2330,9 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
    * CORESET order */
   nfapi_nr_dl_tti_pdcch_pdu_rel15_t *pdcch_pdu_coreset[MAX_NUM_CORESET] = {0};
 
-
   NR_ServingCellConfigCommon_t *scc = nr_mac->common_channels[0].ServingCellConfigCommon;
   NR_UEs_t *UE_info = &nr_mac->UE_info;
-  UE_iterator( UE_info->list, UE) {
+  UE_iterator (UE_info->list, UE) {
     NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
     if (sched_ctrl->ul_failure && !get_softmodem_params()->phy_test)
       continue;
@@ -2316,14 +2347,14 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     NR_sched_pusch_t *sched_pusch = &sched_ctrl->sched_pusch;
     // if (slot == 6)
     // {
-      
+
     // sched_pusch->tb_size = 0;
     // printf("changed!%d   num_dmrs_cdm_grps_no_data %d  tb_size %d \n ",slot,sched_pusch->dmrs_info.num_dmrs_cdm_grps_no_data,
     //       sched_pusch->tb_size);
-  
+
     //   /* code */
     // }
-    LOG_D(NR_MAC,"UE %04x : sched_pusch->rbSize %d\n",UE->rnti,sched_pusch->rbSize);
+    LOG_D(NR_MAC, "UE %04x : sched_pusch->rbSize %d\n", UE->rnti, sched_pusch->rbSize);
     if (sched_pusch->rbSize <= 0)
       continue;
 
@@ -2335,9 +2366,7 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     if (harq_id < 0) {
       /* PP has not selected a specific HARQ Process, get a new one */
       harq_id = sched_ctrl->available_ul_harq.head;
-      AssertFatal(harq_id >= 0,
-                  "no free HARQ process available for UE %04x\n",
-                  UE->rnti);
+      AssertFatal(harq_id >= 0, "no free HARQ process available for UE %04x\n", UE->rnti);
       remove_front_nr_list(&sched_ctrl->available_ul_harq);
       sched_pusch->ul_harq_pid = harq_id;
     } else {
@@ -2392,7 +2421,7 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     UE->mac_stats.ul.current_bytes = sched_pusch->tb_size;
     UE->mac_stats.ul.current_rbs = sched_pusch->rbSize;
     sched_ctrl->last_ul_frame = sched_pusch->frame;
-    sched_ctrl->last_ul_slot = sched_pusch->slot;  
+    sched_ctrl->last_ul_slot = sched_pusch->slot;
 
     /* PUSCH in a later slot, but corresponding DCI now! */
     const int index = ul_buffer_index(sched_pusch->frame,
@@ -2403,14 +2432,15 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     if (future_ul_tti_req->SFN != sched_pusch->frame || future_ul_tti_req->Slot != sched_pusch->slot)
       LOG_W(NR_MAC,
             "%d.%d future UL_tti_req's frame.slot %d.%d does not match PUSCH %d.%d\n",
-            frame, slot,
+            frame,
+            slot,
             future_ul_tti_req->SFN,
             future_ul_tti_req->Slot,
             sched_pusch->frame,
             sched_pusch->slot);
-    AssertFatal(future_ul_tti_req->n_pdus <
-                sizeof(future_ul_tti_req->pdus_list) / sizeof(future_ul_tti_req->pdus_list[0]),
-                "Invalid future_ul_tti_req->n_pdus %d\n", future_ul_tti_req->n_pdus);
+    AssertFatal(future_ul_tti_req->n_pdus < sizeof(future_ul_tti_req->pdus_list) / sizeof(future_ul_tti_req->pdus_list[0]),
+                "Invalid future_ul_tti_req->n_pdus %d\n",
+                future_ul_tti_req->n_pdus);
 
     future_ul_tti_req->pdus_list[future_ul_tti_req->n_pdus].pdu_type = NFAPI_NR_UL_CONFIG_PUSCH_PDU_TYPE;
     future_ul_tti_req->pdus_list[future_ul_tti_req->n_pdus].pdu_size = sizeof(nfapi_nr_pusch_pdu_t);
@@ -2429,11 +2459,11 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
 
     pusch_pdu->pdu_bit_map = PUSCH_PDU_BITMAP_PUSCH_DATA;
     pusch_pdu->rnti = rnti;
-    pusch_pdu->handle = 0; //not yet used
+    pusch_pdu->handle = 0; // not yet used
 
     /* FAPI: BWP */
 
-    pusch_pdu->bwp_size  = current_BWP->BWPSize;
+    pusch_pdu->bwp_size = current_BWP->BWPSize;
     pusch_pdu->bwp_start = current_BWP->BWPStart;
     pusch_pdu->subcarrier_spacing = current_BWP->scs;
     pusch_pdu->cyclic_prefix = 0;
@@ -2442,7 +2472,6 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     pusch_pdu->target_code_rate = sched_pusch->R;
     pusch_pdu->qam_mod_order = sched_pusch->Qm;
 
-    
     pusch_pdu->mcs_table = current_BWP->mcs_table;
     pusch_pdu->transform_precoding = current_BWP->transform_precoding;
     if (current_BWP->pusch_Config && current_BWP->pusch_Config->dataScramblingIdentityPUSCH)
@@ -2459,16 +2488,13 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     /* FAPI: DMRS */
     pusch_pdu->num_dmrs_cdm_grps_no_data = sched_pusch->dmrs_info.num_dmrs_cdm_grps_no_data;
 
-    
-
-    
-    pusch_pdu->dmrs_ports = ((1<<sched_pusch->nrOfLayers) - 1);
+    pusch_pdu->dmrs_ports = ((1 << sched_pusch->nrOfLayers) - 1);
     pusch_pdu->ul_dmrs_symb_pos = sched_pusch->dmrs_info.ul_dmrs_symb_pos;
     pusch_pdu->dmrs_config_type = sched_pusch->dmrs_info.dmrs_config_type;
-    pusch_pdu->scid = 0;      // DMRS sequence initialization [TS38.211, sec 6.4.1.1.1]
+    pusch_pdu->scid = 0; // DMRS sequence initialization [TS38.211, sec 6.4.1.1.1]
     const NR_DMRS_UplinkConfig_t *NR_DMRS_UplinkConfig = get_DMRS_UplinkConfig(current_BWP->pusch_Config, &sched_pusch->tda_info);
     if (pusch_pdu->transform_precoding) { // transform precoding disabled
-      long *scramblingid=NULL;
+      long *scramblingid = NULL;
       pusch_pdu->pusch_identity = *scc->physCellId;
       if (NR_DMRS_UplinkConfig && pusch_pdu->scid == 0)
         scramblingid = NR_DMRS_UplinkConfig->transformPrecodingDisabled->scramblingID0;
@@ -2478,25 +2504,23 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
         pusch_pdu->ul_dmrs_scrambling_id = *scc->physCellId;
       else
         pusch_pdu->ul_dmrs_scrambling_id = *scramblingid;
-    }
-    else {
+    } else {
       pusch_pdu->ul_dmrs_scrambling_id = *scc->physCellId;
-      if (NR_DMRS_UplinkConfig &&
-          NR_DMRS_UplinkConfig->transformPrecodingEnabled &&
-          NR_DMRS_UplinkConfig->transformPrecodingEnabled->nPUSCH_Identity != NULL)
+      if (NR_DMRS_UplinkConfig && NR_DMRS_UplinkConfig->transformPrecodingEnabled
+          && NR_DMRS_UplinkConfig->transformPrecodingEnabled->nPUSCH_Identity != NULL)
         pusch_pdu->pusch_identity = *NR_DMRS_UplinkConfig->transformPrecodingEnabled->nPUSCH_Identity;
       else if (NR_DMRS_UplinkConfig)
         pusch_pdu->pusch_identity = *scc->physCellId;
     }
-    pusch_pdu->scid = 0;      // DMRS sequence initialization [TS38.211, sec 6.4.1.1.1]
-    pusch_pdu->dmrs_ports = ((1<<sched_pusch->nrOfLayers) - 1);
+    pusch_pdu->scid = 0; // DMRS sequence initialization [TS38.211, sec 6.4.1.1.1]
+    pusch_pdu->dmrs_ports = ((1 << sched_pusch->nrOfLayers) - 1);
 
     /* FAPI: Pusch Allocation in frequency domain */
-    pusch_pdu->resource_alloc = 1; //type 1
+    pusch_pdu->resource_alloc = 1; // type 1
     pusch_pdu->rb_start = sched_pusch->rbStart;
     pusch_pdu->rb_size = sched_pusch->rbSize;
     pusch_pdu->vrb_to_prb_mapping = 0;
-    if (current_BWP->pusch_Config==NULL || current_BWP->pusch_Config->frequencyHopping==NULL)
+    if (current_BWP->pusch_Config == NULL || current_BWP->pusch_Config->frequencyHopping == NULL)
       pusch_pdu->frequency_hopping = 0;
     else
       pusch_pdu->frequency_hopping = 1;
@@ -2506,11 +2530,13 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     pusch_pdu->nr_of_symbols = sched_pusch->tda_info.nrOfSymbols;
 
     /* PUSCH PDU */
-    AssertFatal(cur_harq->round < nr_mac->ul_bler.harq_round_max, "Indexing nr_rv_round_map[%d] is out of bounds\n", cur_harq->round%4);
-    pusch_pdu->pusch_data.rv_index = nr_rv_round_map[cur_harq->round%4];
+    AssertFatal(cur_harq->round < nr_mac->ul_bler.harq_round_max,
+                "Indexing nr_rv_round_map[%d] is out of bounds\n",
+                cur_harq->round % 4);
+    pusch_pdu->pusch_data.rv_index = nr_rv_round_map[cur_harq->round % 4];
     pusch_pdu->pusch_data.harq_process_id = harq_id;
-    pusch_pdu->pusch_data.new_data_indicator = (cur_harq->round == 0) ? 1 : 0;  // not NDI but indicator for new transmission
- 
+    pusch_pdu->pusch_data.new_data_indicator = (cur_harq->round == 0) ? 1 : 0; // not NDI but indicator for new transmission
+
     // if (slot == 6 || slot == 16)
     // {
 
@@ -2520,7 +2546,7 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     // }
     pusch_pdu->pusch_data.tb_size = sched_pusch->tb_size;
     pusch_pdu->mcs_index = sched_pusch->mcs;
-    pusch_pdu->pusch_data.num_cb = 0; //CBG not supported
+    pusch_pdu->pusch_data.num_cb = 0; // CBG not supported
 
     // Beamforming
     pusch_pdu->beamforming.num_prgs = 0;
@@ -2528,7 +2554,7 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     pusch_pdu->beamforming.dig_bf_interface = 1;
     pusch_pdu->beamforming.prgs_list[0].dig_bf_interface_list[0].beam_idx = UE->UE_beam_index;
 
-    pusch_pdu->maintenance_parms_v3.ldpcBaseGraph = get_BG(sched_pusch->tb_size<<3,sched_pusch->R);
+    pusch_pdu->maintenance_parms_v3.ldpcBaseGraph = get_BG(sched_pusch->tb_size << 3, sched_pusch->R);
 
     // Calacualte the normalized tx_power for PHR
     long *deltaMCS = current_BWP->pusch_Config ? current_BWP->pusch_Config->pusch_PowerControl->deltaMCS : NULL;
@@ -2549,30 +2575,36 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
       long *maxMIMO_Layers = sc_info->maxMIMO_Layers_PUSCH;
       if (!maxMIMO_Layers)
         maxMIMO_Layers = current_BWP->pusch_Config->maxRank;
-      AssertFatal (maxMIMO_Layers != NULL,"Option with max MIMO layers not configured is not supported\n");
+      AssertFatal(maxMIMO_Layers != NULL, "Option with max MIMO layers not configured is not supported\n");
       pusch_pdu->maintenance_parms_v3.tbSizeLbrmBytes =
           nr_compute_tbslbrm(current_BWP->mcs_table, sc_info->ul_bw_tbslbrm, *maxMIMO_Layers);
     } else
       pusch_pdu->maintenance_parms_v3.tbSizeLbrmBytes = 0;
 
-    LOG_D(NR_MAC,"PUSCH PDU : data_scrambling_identity %x, dmrs_scrambling_id %x\n",pusch_pdu->data_scrambling_id,pusch_pdu->ul_dmrs_scrambling_id);
+    LOG_D(NR_MAC,
+          "PUSCH PDU : data_scrambling_identity %x, dmrs_scrambling_id %x\n",
+          pusch_pdu->data_scrambling_id,
+          pusch_pdu->ul_dmrs_scrambling_id);
     /* TRANSFORM PRECODING --------------------------------------------------------*/
 
-    if (pusch_pdu->transform_precoding == NR_PUSCH_Config__transformPrecoder_enabled){
-
+    if (pusch_pdu->transform_precoding == NR_PUSCH_Config__transformPrecoder_enabled) {
       // U as specified in section 6.4.1.1.1.2 in 38.211, if sequence hopping and group hopping are disabled
       pusch_pdu->dfts_ofdm.low_papr_group_number = pusch_pdu->pusch_identity % 30;
 
       // V as specified in section 6.4.1.1.1.2 in 38.211 V = 0 if sequence hopping and group hopping are disabled
-      if ((!NR_DMRS_UplinkConfig ||
-          !NR_DMRS_UplinkConfig->transformPrecodingEnabled ||
-          (!NR_DMRS_UplinkConfig->transformPrecodingEnabled->sequenceGroupHopping && !NR_DMRS_UplinkConfig->transformPrecodingEnabled->sequenceHopping)) &&
-          !scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->groupHoppingEnabledTransformPrecoding)
+      if ((!NR_DMRS_UplinkConfig || !NR_DMRS_UplinkConfig->transformPrecodingEnabled
+           || (!NR_DMRS_UplinkConfig->transformPrecodingEnabled->sequenceGroupHopping
+               && !NR_DMRS_UplinkConfig->transformPrecodingEnabled->sequenceHopping))
+          && !scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->groupHoppingEnabledTransformPrecoding)
         pusch_pdu->dfts_ofdm.low_papr_sequence_number = 0;
       else
-        AssertFatal(1==0,"Hopping mode is not supported in transform precoding\n");
+        AssertFatal(1 == 0, "Hopping mode is not supported in transform precoding\n");
 
-      LOG_D(NR_MAC,"TRANSFORM PRECODING IS ENABLED. CDM groups: %d, U: %d MCS table: %d\n", pusch_pdu->num_dmrs_cdm_grps_no_data, pusch_pdu->dfts_ofdm.low_papr_group_number, current_BWP->mcs_table);
+      LOG_D(NR_MAC,
+            "TRANSFORM PRECODING IS ENABLED. CDM groups: %d, U: %d MCS table: %d\n",
+            pusch_pdu->num_dmrs_cdm_grps_no_data,
+            pusch_pdu->dfts_ofdm.low_papr_group_number,
+            current_BWP->mcs_table);
     }
 
     /*-----------------------------------------------------------------------------*/
@@ -2580,17 +2612,21 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     /* PUSCH PTRS */
     if (NR_DMRS_UplinkConfig && NR_DMRS_UplinkConfig->phaseTrackingRS != NULL) {
       bool valid_ptrs_setup = false;
-      pusch_pdu->pusch_ptrs.ptrs_ports_list   = (nfapi_nr_ptrs_ports_t *) malloc(2*sizeof(nfapi_nr_ptrs_ports_t));
+      pusch_pdu->pusch_ptrs.ptrs_ports_list = (nfapi_nr_ptrs_ports_t *)malloc(2 * sizeof(nfapi_nr_ptrs_ports_t));
       valid_ptrs_setup = set_ul_ptrs_values(NR_DMRS_UplinkConfig->phaseTrackingRS->choice.setup,
-                                            pusch_pdu->rb_size, pusch_pdu->mcs_index, pusch_pdu->mcs_table,
-                                            &pusch_pdu->pusch_ptrs.ptrs_freq_density,&pusch_pdu->pusch_ptrs.ptrs_time_density,
-                                            &pusch_pdu->pusch_ptrs.ptrs_ports_list->ptrs_re_offset,&pusch_pdu->pusch_ptrs.num_ptrs_ports,
-                                            &pusch_pdu->pusch_ptrs.ul_ptrs_power, pusch_pdu->nr_of_symbols);
-      if (valid_ptrs_setup==true) {
+                                            pusch_pdu->rb_size,
+                                            pusch_pdu->mcs_index,
+                                            pusch_pdu->mcs_table,
+                                            &pusch_pdu->pusch_ptrs.ptrs_freq_density,
+                                            &pusch_pdu->pusch_ptrs.ptrs_time_density,
+                                            &pusch_pdu->pusch_ptrs.ptrs_ports_list->ptrs_re_offset,
+                                            &pusch_pdu->pusch_ptrs.num_ptrs_ports,
+                                            &pusch_pdu->pusch_ptrs.ul_ptrs_power,
+                                            pusch_pdu->nr_of_symbols);
+      if (valid_ptrs_setup == true) {
         pusch_pdu->pdu_bit_map |= PUSCH_PDU_BITMAP_PUSCH_PTRS; // enable PUSCH PTRS
       }
-    }
-    else{
+    } else {
       pusch_pdu->pdu_bit_map &= ~PUSCH_PDU_BITMAP_PUSCH_PTRS; // disable PUSCH PTRS
     }
 
@@ -2604,21 +2640,20 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
       nfapi_nr_ul_dci_request_pdus_t *ul_dci_request_pdu = &ul_dci_req->ul_dci_pdu_list[ul_dci_req->numPdus];
       memset(ul_dci_request_pdu, 0, sizeof(nfapi_nr_ul_dci_request_pdus_t));
       ul_dci_request_pdu->PDUType = NFAPI_NR_DL_TTI_PDCCH_PDU_TYPE;
-      ul_dci_request_pdu->PDUSize = (uint8_t)(4+sizeof(nfapi_nr_dl_tti_pdcch_pdu));
+      ul_dci_request_pdu->PDUSize = (uint8_t)(4 + sizeof(nfapi_nr_dl_tti_pdcch_pdu));
       pdcch_pdu = &ul_dci_request_pdu->pdcch_pdu.pdcch_pdu_rel15;
       ul_dci_req->numPdus += 1;
       nr_configure_pdcch(pdcch_pdu, coreset, &sched_ctrl->sched_pdcch, false);
       pdcch_pdu_coreset[coresetid] = pdcch_pdu;
     }
 
-    LOG_D(NR_MAC,"Configuring ULDCI/PDCCH in %d.%d at CCE %d, rnti %04x\n", frame,slot,sched_ctrl->cce_index,rnti);
+    LOG_D(NR_MAC, "Configuring ULDCI/PDCCH in %d.%d at CCE %d, rnti %04x\n", frame, slot, sched_ctrl->cce_index, rnti);
 
     /* Fill PDCCH DL DCI PDU */
     nfapi_nr_dl_dci_pdu_t *dci_pdu = &pdcch_pdu->dci_pdu[pdcch_pdu->numDlDci];
     pdcch_pdu->numDlDci++;
     dci_pdu->RNTI = rnti;
-    if (coreset->pdcch_DMRS_ScramblingID &&
-        ss->searchSpaceType->present == NR_SearchSpace__searchSpaceType_PR_ue_Specific) {
+    if (coreset->pdcch_DMRS_ScramblingID && ss->searchSpaceType->present == NR_SearchSpace__searchSpaceType_PR_ue_Specific) {
       dci_pdu->ScramblingId = *coreset->pdcch_DMRS_ScramblingID;
       dci_pdu->ScramblingRNTI = rnti;
     } else {

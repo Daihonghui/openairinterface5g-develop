@@ -969,6 +969,17 @@ void RCconfig_NR_L1(void)
 {
   LOG_I(NR_PHY, "Initializing NR L1: RC.nb_nr_L1_inst = %d\n", RC.nb_nr_L1_inst);
 
+  paramdef_t RxCaptureParams[] = {
+      {CONFIG_STRING_RXCAPTURE_ENABLE, 0, .uptr = &RC.rxcapture.cfg.enable, .defuintval = 0, TYPE_UINT, 0},
+      {CONFIG_STRING_RXCAPTURE_RX_SLOT, 0, .uptr = &RC.rxcapture.cfg.capture_slot, .defuintval = 7, TYPE_UINT, 0},
+      {CONFIG_STRING_RXCAPTURE_SIGNAL_TYPE, 0, .strptr = &RC.rxcapture.cfg.signal_type, .defstrval = "msg3", TYPE_STRING, 0},
+      {CONFIG_STRING_RXCAPTURE_OUTPUT_DIR, 0, .strptr = &RC.rxcapture.cfg.output_dir, .defstrval = "./", TYPE_STRING, 0},
+      {CONFIG_STRING_RXCAPTURE_DEBUG_OFFSET, 0, .uptr = &RC.rxcapture.cfg.debug_offset, .defuintval = 50000, TYPE_UINT, 0},
+  };
+  config_get(config_get_if(), RxCaptureParams, sizeofArray(RxCaptureParams), CONFIG_STRING_RXCAPTURE_CONFIG);
+  rxcapture_sig_t rc_sig = parse_sig(RC.rxcapture.cfg.signal_type);
+  RC.rxcapture.cfg_sig = rc_sig;
+
   for (int j = 0; j < RC.nb_nr_L1_inst; j++) {
     PHY_VARS_gNB *gNB = RC.gNB[j];
     AssertFatal(RC.gNB[j] != NULL, "gNB L1 instance is null at index %d, cannot complete L1 configuration\n", j);
@@ -2739,4 +2750,17 @@ ngran_node_t get_node_type(void)
   } else {
     return ngran_gNB;
   }
+}
+
+static rxcapture_sig_t parse_sig(const char *s)
+{
+  if (s == NULL)
+    return RXCAP_NONE;
+  if (!strcmp(s, "msg3"))
+    return RXCAP_MSG3;
+  if (!strcmp(s, "msg5"))
+    return RXCAP_MSG5;
+  if (!strcmp(s, "srs"))
+    return RXCAP_SRS;
+  return RXCAP_NONE;
 }
