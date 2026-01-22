@@ -1,0 +1,102 @@
+=cmd-param-changed,param="logging enabled",value="on"
+1358^done
+(gdb) 
+1359^done,variables=[{name="arg",arg="1"},{name="rdata"},{name="Ns"},{name="symbol"},{name="numAntennas"},{name="pusch_pdu"},{name="noise_amp2"},{name="nest_count"},{name="delay"},{name="chest_freq"},{name="pusch_vars"},{name="ul_ch_estimates"},{name="frame_parms"},{name="symbolSize"},{name="slot_offset"},{name="delta"},{name="symbol_offset"},{name="k0"},{name="nb_rb_pusch"},{name="beam_nb"},{name="__FUNCTION__"}]
+(gdb) 
+1360^done,name="var165",numchild="0",value="0x7fff63375d40",type="void *",thread-id="43",has_more="0"
+(gdb) 
+1361^done,name="var166",numchild="19",value="0x7fff63375d40",type="puschAntennaProc_t *",thread-id="43",has_more="0"
+(gdb) 
+1362^done,name="var167",numchild="0",value="17 '\\021'",type="unsigned char",thread-id="43",has_more="0"
+(gdb) 
+1363^done,name="var168",numchild="0",value="10 '\\n'",type="unsigned char",thread-id="43",has_more="0"
+(gdb) 
+1364^done,name="var169",numchild="0",value="1",type="int",thread-id="43",has_more="0"
+(gdb) 
+1365^done,name="var170",numchild="37",value="0x55555a45b960",type="nfapi_nr_pusch_pdu_t *",thread-id="43",has_more="0"
+(gdb) 
+1366^done,name="var171",numchild="0",value="<optimized out>",type="uint64_t",thread-id="43",has_more="0"
+(gdb) 
+1367^done,name="var172",numchild="0",value="<optimized out>",type="int",thread-id="43",has_more="0"
+(gdb) 
+1368^done,name="var173",numchild="3",value="<optimized out>",type="delay_t *",thread-id="43",has_more="0"
+(gdb) 
+1369^done,name="var174",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1370^done,name="var175",numchild="17",value="<optimized out>",type="NR_gNB_PUSCH *",thread-id="43",has_more="0"
+(gdb) 
+1371^done,name="var176",numchild="1",value="<optimized out>",type="c16_t **",thread-id="43",has_more="0"
+(gdb) 
+1372^done,name="var177",numchild="60",value="<optimized out>",type="NR_DL_FRAME_PARMS *",thread-id="43",has_more="0"
+(gdb) 
+1373^done,name="var178",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1374^done,name="var179",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1375^done,name="var180",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1376^done,name="var181",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1377^done,name="var182",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1378^done,name="var183",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1379^done,name="var184",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1380^done,name="var185",numchild="28",value="[28]",type="const char [28]",has_more="0"
+(gdb) 
+1381^done,name="var186",numchild="1",value="0x55555666f270 <__FUNCTION__.4>",type="const char (*)[28]",has_more="0"
+(gdb) 
+1382^done,completion="print r",matches=["print rand","print rand@plt","print random","print random@plt","print read","print read@plt","print read_config_and_init","print read_config_and_init[cold]","print read_cpu_hardware","print read_recplayconfig","print read_recplayconfig[cold]","print realloc","print realloc@plt","print reassemble_and_deliver[cold]","print reblock_tun_socket[cold]","print recv_IF4p5","print recv_IF4p5.cold","print recvfrom","print recvfrom@plt","print refresh_table","print refresh_table[cold]","print register_tm_clones","print release_UE_in_freeList.cold","print release_rlc_entity_from_lcid[cold]","print release_rnti_of_phy[cold]","print remove_ue_list","print requeue","print requeue[cold]","print reset_DLSCH_struct","print reset_active_stats","print reset_active_ulsch","print reset_active_ulsch[cold]","print reset_nr_transport","print reset_queue","print reverse_index","print rlc_data_req[cold]","print rlc_data_req_thread[cold]","print rlc_module_init[cold]","print rlc_tick[cold]","print rlcmac_init_global_param","print rlcmac_init_global_param[cold]","print rotate_cpx_vector","print round","print round@plt","print roundf","print roundf@plt","print rr_dl_run[cold]","print rr_dl_setup","print rr_dl_setup[part]","print rr_dl_unset","print rr_ul_run[cold]","print rr_ul_setup[part]","print rrc_CU_process_f1_lost_connection.cold","print rrc_CU_process_ue_context_modification_response.cold","print rrc_CU_process_ue_context_release_request.cold","print rrc_CU_process_ue_context_setup_response.cold","print rrc_M2AP_do_SIB1_MBMS_SIB13.isra.0.cold","print rrc_M2AP_do_SIB23_SIB2_SIB13.isra.0.cold","print rrc_M2AP_init_MCCH.constprop.0.cold","print rrc_add_nsa_user[cold]","print rrc_data_ind[cold]","print rrc_data_req[cold]","print rrc_eNB_S1AP_get_ue_ids.cold","print rrc_eNB_S1AP_remove_ue_ids.cold","print rrc_eNB_allocate_new_UE_context.cold","print rrc_eNB_configure_rbs_handover.cold","print rrc_eNB_decode_ccch.cold","print rrc_eNB_decode_dcch.cold","print rrc_eNB_free_UE.cold","print rrc_eNB_free_mem_UE_context.cold","print rrc_eNB_generate_HO_RRCConnectionReconfiguration.cold","print rrc_eNB_generate_NR_UECapabilityEnquiry.cold","print rrc_eNB_generate_RRCConnectionReconfiguration_Sidelink.cold","print rrc_eNB_generate_RRCConnectionReconfiguration_endc.cold","print rrc_eNB_generate_RRCConnectionReestablishment.cold","print rrc_eNB_generate_RRCConnectionReestablishmentReject.cold","print rrc_eNB_generate_RRCConnectionReject.cold","print rrc_eNB_generate_RRCConnectionRelease.cold","print rrc_eNB_generate_RRCConnectionSetup.cold","print rrc_eNB_generate_SecurityModeCommand.cold","print rrc_eNB_generate_UECapabilityEnquiry.cold","print rrc_eNB_generate_dedicatedRRCConnectionReconfiguration.cold","print rrc_eNB_generate_dedicatedRRCConnectionReconfiguration_release.cold","print rrc_eNB_generate_defaultRRCConnectionReconfiguration.cold","print rrc_eNB_get_next_free_ue_context.cold","print rrc_eNB_get_next_transaction_identifier.cold","print rrc_eNB_modify_dedicatedRRCConnectionReconfiguration.cold","print rrc_eNB_previous_SRB2.cold","print rrc_eNB_process_AdditionResponseInformation.cold","print rrc_eNB_process_ENDC_DC_prep_timeout.cold","print rrc_eNB_process_ENDC_sgNB_release_required.cold","print rrc_eNB_process_ENDC_x2_setup_request.cold","print rrc_eNB_process_GTPV1U_CREATE_TUNNEL_RESP.cold","print rrc_eNB_process_M2AP_MBMS_SESSION_START_REQ.cold","print rrc_eNB_process_MeasurementReport.cold","print rrc_eNB_process_PAGING_IND.cold","print rrc_eNB_process_RRCConnectionReconfigurationComplete.cold","print rrc_eNB_process_RRCConnectionReestablishmentComplete.cold","print rrc_eNB_process_RRCConnectionSetupComplete.cold","print rrc_eNB_process_S1AP_DOWNLINK_NAS.cold","print rrc_eNB_process_S1AP_E_RAB_MODIFY_REQ.cold","print rrc_eNB_process_S1AP_E_RAB_RELEASE_COMMAND.cold","print rrc_eNB_process_S1AP_E_RAB_SETUP_REQ.cold","print rrc_eNB_process_S1AP_INITIAL_CONTEXT_SETUP_REQ.cold","print rrc_eNB_process_S1AP_PATH_SWITCH_REQ_ACK.cold","print rrc_eNB_process_S1AP_UE_CONTEXT_RELEASE_COMMAND.cold","print rrc_eNB_process_S1AP_UE_CONTEXT_RELEASE_REQ.cold","print rrc_eNB_process_S1AP_UE_CTXT_MODIFICATION_REQ.cold","print rrc_eNB_process_SidelinkUEInformation.cold","print rrc_eNB_process_X2AP_TUNNEL_SETUP_REQ.cold","print rrc_eNB_process_security.cold","print rrc_eNB_process_x2_setup_request.cold","print rrc_eNB_process_x2_setup_response.cold","print rrc_eNB_reconfigure_DRBs.cold","print rrc_eNB_remove_ue_context.cold","print rrc_eNB_send_E_RAB_Modification_Indication.cold","print rrc_eNB_send_GTPV1U_ENB_DELETE_TUNNEL_REQ.cold","print rrc_eNB_send_PATH_SWITCH_REQ.cold","print rrc_eNB_send_S1AP_E_RAB_MODIFY_RESP.cold","print rrc_eNB_send_S1AP_E_RAB_RELEASE_RESPONSE.cold","print rrc_eNB_send_S1AP_E_RAB_SETUP_RESP.cold","print rrc_eNB_send_S1AP_NAS_FIRST_REQ.cold","print rrc_eNB_send_S1AP_UE_CAPABILITIES_IND.cold","print rrc_eNB_send_S1AP_UE_CONTEXT_RELEASE_REQ.cold","print rrc_enb_process_itti_msg[cold]","print rrc_forward_ue_nas_message.part[cold]","print rrc_gNB_allocate_new_ue_context.cold","print rrc_gNB_create_ue_context.cold","print rrc_gNB_decode_dcch.isra.0.cold","print rrc_gNB_free_mem_ue_context.cold","print rrc_gNB_generate_RRCRelease.cold","print rrc_gNB_generate_RRCSetup.constprop.0.cold","print rrc_gNB_generate_SecurityModeCommand.cold","print rrc_gNB_generate_UeContextModificationRequest.cold","print rrc_gNB_generate_UeContextSetupRequest.cold","print rrc_gNB_generate_dedicatedRRCReconfiguration.cold","print rrc_gNB_generate_dedicatedRRCReconfiguration_release.cold","print rrc_gNB_generate_pcch_msg.cold","print rrc_gNB_get_next_transaction_identifier.cold","print rrc_gNB_get_ue_context_by_rnti.cold","print rrc_gNB_get_ue_context_by_rnti_any_du.cold","print rrc_gNB_modify_dedicatedRRCReconfiguration.cold","print rrc_gNB_process_AdditionRequestInformation.cold","print rrc_gNB_process_GTPV1U_CREATE_TUNNEL_RESP.cold","print rrc_gNB_process_MeasurementReport.cold","print rrc_gNB_process_NGAP_DOWNLINK_NAS.cold","print rrc_gNB_process_NGAP_INITIAL_CONTEXT_SETUP_REQ.cold","print rrc_gNB_process_NGAP_PDUSESSION_MODIFY_REQ.cold","print rrc_gNB_process_NGAP_PDUSESSION_RELEASE_COMMAND.cold","print rrc_gNB_process_NGAP_PDUSESSION_SETUP_REQ.cold","print rrc_gNB_process_NGAP_UE_CONTEXT_RELEASE_COMMAND.cold","print rrc_gNB_process_NGAP_UE_CONTEXT_RELEASE_REQ.cold","print rrc_gNB_process_PAGING_IND.cold","print rrc_gNB_process_RRCReestablishmentComplete.cold","print rrc_gNB_process_e1_bearer_context_modif_resp.cold","print rrc_gNB_process_e1_bearer_context_release_cplt.cold","print rrc_gNB_process_e1_bearer_context_setup_resp.cold","print rrc_gNB_process_e1_lost_connection.cold","print rrc_gNB_process_e1_setup_req.cold","print rrc_gNB_process_f1_du_configuration_update.cold","print rrc_gNB_process_f1_setup_req.cold","print rrc_gNB_process_initial_ul_rrc_message.cold","print rrc_gNB_remove_ue_context.cold","print rrc_gNB_send_NGAP_NAS_FIRST_REQ.cold","print rrc_gNB_send_NGAP_PDUSESSION_MODIFY_RESP.cold","print rrc_gNB_send_NGAP_PDUSESSION_RELEASE_RESPONSE.cold","print rrc_gNB_send_NGAP_PDUSESSION_SETUP_RESP.cold","print rrc_gNB_send_NGAP_UE_CAPABILITIES_IND.cold","print rrc_gNB_send_NGAP_UE_CONTEXT_RELEASE_REQ.cold","print rrc_gNB_send_NGAP_UPLINK_NAS.cold","print rrc_gNB_ue_context_5g_s_tmsi_exist.cold","print rrc_get_max_nr_csrs[cold]","print rrc_gnb_task[cold]","print rrc_handle_RRCReestablishmentRequest.cold","print rrc_mac_remove_ue","print rrc_mac_remove_ue[cold]","print rrc_parse_ue_capabilities[cold]","print rrc_pdcp_config_security[cold]","print rrc_remove_nsa_user[cold]","print rrc_remove_ue[cold]","print rrc_rlc_config_req[cold]","print rrc_subframe_process[cold]","print ru_stats_thread","print ru_thread","print ru_thread[cold]","print ru_tx_func","print ru_tx_func[cold]","print run_scheduler_monolithic[cold]","print rx_func.isra[cold]","print rx_func[isra]","print rx_nr_prach","print rx_nr_prach[cold]","print rx_nr_prach_ru","print rx_nr_prach_ru[cold]","print rx_pucch[cold]","print rx_rf","print rx_rf[cold]","print rx_sdu[cold]","print rx_ulsch[cold]","print rx_ulsch_emul[cold]"],max_completions_reached="1"
+(gdb) 
+~"$2 = (puschAntennaProc_t *) 0x7fff63375d40\n"
+1383^done
+(gdb) 
+1384^done,variables=[{name="arg",arg="1"},{name="rdata"},{name="Ns"},{name="symbol"},{name="numAntennas"},{name="pusch_pdu"},{name="noise_amp2"},{name="nest_count"},{name="delay"},{name="chest_freq"},{name="pusch_vars"},{name="ul_ch_estimates"},{name="frame_parms"},{name="symbolSize"},{name="slot_offset"},{name="delta"},{name="symbol_offset"},{name="k0"},{name="nb_rb_pusch"},{name="beam_nb"},{name="__FUNCTION__"}]
+(gdb) 
+1385^done,name="var187",numchild="0",value="0x7fff63375d40",type="void *",thread-id="43",has_more="0"
+(gdb) 
+1386^done,name="var188",numchild="19",value="0x7fff63375d40",type="puschAntennaProc_t *",thread-id="43",has_more="0"
+(gdb) 
+1387^done,name="var189",numchild="0",value="17 '\\021'",type="unsigned char",thread-id="43",has_more="0"
+(gdb) 
+1388^done,name="var190",numchild="0",value="10 '\\n'",type="unsigned char",thread-id="43",has_more="0"
+(gdb) 
+1389^done,name="var191",numchild="0",value="1",type="int",thread-id="43",has_more="0"
+(gdb) 
+1390^done,name="var192",numchild="37",value="0x55555a45b960",type="nfapi_nr_pusch_pdu_t *",thread-id="43",has_more="0"
+(gdb) 
+1391^done,name="var193",numchild="0",value="<optimized out>",type="uint64_t",thread-id="43",has_more="0"
+(gdb) 
+1392^done,name="var194",numchild="0",value="<optimized out>",type="int",thread-id="43",has_more="0"
+(gdb) 
+1393^done,name="var195",numchild="3",value="<optimized out>",type="delay_t *",thread-id="43",has_more="0"
+(gdb) 
+1394^done,name="var196",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1395^done,name="var197",numchild="17",value="<optimized out>",type="NR_gNB_PUSCH *",thread-id="43",has_more="0"
+(gdb) 
+1396^done,name="var198",numchild="1",value="<optimized out>",type="c16_t **",thread-id="43",has_more="0"
+(gdb) 
+1397^done,name="var199",numchild="60",value="<optimized out>",type="NR_DL_FRAME_PARMS *",thread-id="43",has_more="0"
+(gdb) 
+1398^done,name="var200",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1399^done,name="var201",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1400^done,name="var202",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1401^done,name="var203",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1402^done,name="var204",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1403^done,name="var205",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1404^done,name="var206",numchild="0",value="<optimized out>",type="const int",thread-id="43",has_more="0"
+(gdb) 
+1405^done,name="var207",numchild="28",value="[28]",type="const char [28]",has_more="0"
+(gdb) 
+1406^done,name="var208",numchild="1",value="0x55555666f270 <__FUNCTION__.4>",type="const char (*)[28]",has_more="0"
+(gdb) 
+~"Warning: 'set logging off', an alias for the command 'set logging enabled', is deprecated.\n"
+~"Use 'set logging enabled off'.\n\n"
