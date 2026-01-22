@@ -20,15 +20,15 @@
  */
 
 /*! \file common/ran_context.h
-* \brief LTE Physical channel configuration and variable structure definitions
-* \author R. Knopp, F. Kaltenberger
-* \date 2011
-* \version 0.1
-* \company Eurecom
-* \email: knopp@eurecom.fr, florian.kaltenberger@eurecom.fr
-* \note
-* \warning
-*/
+ * \brief LTE Physical channel configuration and variable structure definitions
+ * \author R. Knopp, F. Kaltenberger
+ * \date 2011
+ * \version 0.1
+ * \company Eurecom
+ * \email: knopp@eurecom.fr, florian.kaltenberger@eurecom.fr
+ * \note
+ * \warning
+ */
 
 #ifndef __RAN_CONTEXT_H__
 #define __RAN_CONTEXT_H__
@@ -48,6 +48,14 @@ struct eNB_MAC_INST_NB_IoT_s;
 struct gNB_MAC_INST_s;
 struct gtpv1u_data_s;
 struct RU_t_s;
+
+typedef struct {
+  uint32_t enable;
+  uint32_t capture_slot; // 7/8/17
+  char *signal_type; // "msg3"|"msg5"|"srs"
+  char *output_dir; // "./"
+  uint32_t debug_offset; // 50000
+} rxcapture_cfg_t;
 
 typedef struct {
   /// RAN context config file name
@@ -77,7 +85,7 @@ typedef struct {
   /// Number of NB_IoT L1 instances in this node
   int nb_nb_iot_L1_inst;
   /// Number of NR L1 instances in this node
-  int nb_nr_L1_inst;  
+  int nb_nr_L1_inst;
   /// Number of Component Carriers per instance in this node
   int *nb_L1_CC;
   /// Number of RU instances in this node
@@ -91,7 +99,7 @@ typedef struct {
   /// RRC context variables
   struct eNB_RRC_INST_s **rrc;
   /// NB_IoT RRC context variables
-  //struct eNB_RRC_INST_NB_IoT_s **nb_iot_rrc;
+  // struct eNB_RRC_INST_NB_IoT_s **nb_iot_rrc;
   /// NR RRC context variables
   struct gNB_RRC_INST_s **nrrrc;
   /// MAC context variables
@@ -100,9 +108,10 @@ typedef struct {
   struct eNB_MAC_INST_NB_IoT_s **nb_iot_mac;
   /// NR MAC context variables
   struct gNB_MAC_INST_s **nrmac;
-  /// GTPu descriptor 
+  /// GTPu descriptor
   struct gtpv1u_data_s *gtpv1u_data_g;
-  /// RU descriptors. These describe what each radio unit is supposed to do and contain the necessary functions for fronthaul interfaces
+  /// RU descriptors. These describe what each radio unit is supposed to do and contain the necessary functions for fronthaul
+  /// interfaces
   struct RU_t_s **ru;
   /// Mask to indicate fronthaul setup status of RU (hard-limit to 64 RUs)
   uint64_t ru_mask;
@@ -111,6 +120,7 @@ typedef struct {
   /// condition variable for signaling setup completion of an RU
   pthread_cond_t ru_cond;
   int msg3_flag;
+  rxcapture_cfg_t rxcapture_cfg;
 } RAN_CONTEXT_t;
 
 extern RAN_CONTEXT_t RC;
