@@ -63,6 +63,7 @@ typedef struct {
   char *output_dir; // "./"
   uint32_t debug_offset; // 50000
   uint32_t snr_thre;
+  char *output;
 } rxcapture_cfg_t;
 typedef struct {
   rxcapture_cfg_t cfg;

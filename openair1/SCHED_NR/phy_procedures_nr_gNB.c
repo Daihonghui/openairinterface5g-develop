@@ -996,7 +996,7 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
                                     &gNB->srs->snr);
           if (RC.rxcapture.cfg_sig == RXCAP_SRS) {
             LOG_A(PHY, "PUSCH_SRS detected in %d.%d SNR:(%d)\n", frame_rx, slot_rx, gNB->srs->snr);
-            if (gNB->srs->snr >= RC.rxcapture.cfg.snr_thre / 10  && slot_rx == 8) {
+            if (gNB->srs->snr >= RC.rxcapture.cfg.snr_thre / 10 && slot_rx == 8) {
               printf("set RC.capture_flag = 1\n");
               RC.capture_flag = 1;
               gNB->common_vars.debugBuff[60000] = gNB->srs->snr;
@@ -1242,54 +1242,86 @@ void save_data_async(const void *source_buffer,
                      size_t sample_size,
                      const char *filename_format,
                      const char *varname_format,
-                     int file_num)
+                     int file_num,
+                     int is_mat) // 1: MAT, 0: BIN
 {
-  ThreadArgs *args = malloc(sizeof(ThreadArgs));
+  // 基础参数检查
+  if (source_buffer == NULL || num_samples <= 0 || filename_format == NULL) {
+    printf("ERROR: save_data_async invalid parameters\n");
+    return;
+  }
+
+  // MAT 模式必须有 varname_format
+  if (is_mat && varname_format == NULL) {
+    printf("ERROR: save_data_async MAT mode requires varname_format\n");
+    return;
+  }
+
+  // 1. 分配结构体
+  ThreadArgs *args = (ThreadArgs *)malloc(sizeof(ThreadArgs));
   if (!args) {
     printf("ERROR: malloc failed for ThreadArgs\n");
     return;
   }
+  // 建议初始化清零，防止脏数据
+  memset(args, 0, sizeof(ThreadArgs));
 
-  args->filename = malloc(256);
+  // 2. 分配文件名内存
+  args->filename = (char *)malloc(256);
   if (!args->filename) {
     printf("ERROR: malloc failed for filename\n");
     free(args);
     return;
   }
 
-  args->varname = malloc(100);
-  if (!args->varname) {
-    printf("ERROR: malloc failed for varname\n");
-    free(args->filename);
-    free(args);
-    return;
-  }
-
-  args->buffer = malloc(num_samples * sample_size);
+  // 3. 分配数据 buffer 内存
+  args->buffer = (int32_t *)malloc(num_samples * sample_size);
   if (!args->buffer) {
     printf("ERROR: malloc failed for buffer copy\n");
-    free(args->varname);
     free(args->filename);
-    free(args);
-    return;
-  }
-  snprintf(args->filename, 256, filename_format, file_num);
-  snprintf(args->varname, 100, varname_format, file_num);
-  memcpy(args->buffer, source_buffer, num_samples * sample_size);
-  args->num_samples = num_samples;
-  pthread_t save_thread;
-  int ret = pthread_create(&save_thread, NULL, save_debugBuff_to_mat, (void *)args);
-  if (ret != 0) {
-    printf("Failed to create save thread: %d\n", ret);
-    // 如果线程创建失败，必须在这里释放所有已分配的内存
-    free(args->buffer);
-    free(args->filename);
-    free(args->varname);
     free(args);
     return;
   }
 
-  // 分离线程，将内存管理的责任完全交给新线程
+  // 4. 根据模式决定是否分配 varname (BIN 不需要)
+  if (is_mat) {
+    args->varname = (char *)malloc(100);
+    if (!args->varname) {
+      printf("ERROR: malloc failed for varname\n");
+      free(args->buffer);
+      free(args->filename);
+      free(args);
+      return;
+    }
+    // 格式化变量名
+    snprintf(args->varname, 100, varname_format, file_num);
+  } else {
+    args->varname = NULL; // BIN 模式置空
+  }
+
+  // 5. 格式化文件名 & 拷贝数据
+  snprintf(args->filename, 256, filename_format, file_num);
+  memcpy(args->buffer, source_buffer, num_samples * sample_size);
+  args->num_samples = (int)num_samples;
+
+  // 6. 根据 is_mat 选择对应的线程执行函数
+  void *(*worker_func)(void *) = (is_mat == 1) ? save_debugBuff_to_mat : save_debugBuff_to_bin;
+
+  pthread_t save_thread;
+  int ret = pthread_create(&save_thread, NULL, worker_func, (void *)args);
+
+  if (ret != 0) {
+    printf("Failed to create save thread: %d\n", ret);
+    // 线程创建失败，手动释放所有资源
+    free(args->buffer);
+    free(args->filename);
+    if (args->varname)
+      free(args->varname);
+    free(args);
+    return;
+  }
+
+  // 7. 分离线程
   pthread_detach(save_thread);
 }
 
@@ -1323,22 +1355,31 @@ void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
       &ru->common.rxdata[0][frame_parms->get_samples_slot_timestamp(slot_rx, frame_parms, 0) - ru->N_TA_offset];
   size_t rxdata_samples = frame_parms->get_samples_per_slot(slot_rx, frame_parms);
   char time_filename_fmt[300];
-  snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.mat", time_iq_dir, nums);
-
-  // 调用异步保存函数
-  save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums);
+  char freq_filename_fmt[300];
+  const int32_t *rxdataF_ptr =
+      &ru->common.rxdataF[0][frame_parms->get_samples_slot_timestamp(slot_rx & 3, frame_parms, 0)]; // 假设从天线0开始
+  size_t rxdataF_samples = frame_parms->get_samples_per_slot(slot_rx & 3, frame_parms); // 假设大小
+  int is_mat = 0;
+  if (RC.rxcapture.cfg.output != NULL) {
+    if (strcmp(RC.rxcapture.cfg.output, "mat") == 0) {
+      is_mat = 1;
+    }
+  }
 
   // --- 4. 保存频域数据 (rxdataF) ---
   // 假设: rxdataF 包含了一个时隙的所有OFDM符号的频域数据
   // 假设大小为: 14个符号 * ofdm符号大小
-  const int32_t *rxdataF_ptr =
-      &ru->common.rxdataF[0][frame_parms->get_samples_slot_timestamp(slot_rx & 3, frame_parms, 0)]; // 假设从天线0开始
-  size_t rxdataF_samples = frame_parms->get_samples_per_slot(slot_rx & 3, frame_parms); // 假设大小
-  char freq_filename_fmt[300];
-  snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.mat", freq_iq_dir, nums);
-
-  // 调用异步保存函数
-  save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums);
+  if (is_mat) {
+    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.mat", freq_iq_dir, nums);
+    save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums, 1);
+    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.mat", time_iq_dir, nums);
+    save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums, 1);
+  } else {
+    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.bin", freq_iq_dir, nums);
+    save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums, 0);
+    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.bin", time_iq_dir, nums);
+    save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums, 0);
+  }
 
   // --- 5. 保存DMRS序列 (从时域数据中提取) ---
   // 为了提取DMRS，我们仍然需要将时域数据复制到debugBuff中
@@ -1351,7 +1392,7 @@ void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
       printf("无法打开文件 %s\n", filename_dmrs);
     } else {
       // 从debugBuff的特定偏移量处提取数据并写入文件
-      for (int i = 0; i < 160 * 6; i++) {
+      for (int i = 0; i < gNB->frame_parms.N_RB_UL * 6; i++) {
         // 高16 虚部 第16 real
         int16_t ii = (int16_t)(gNB->common_vars.debugBuff[RC.rxcapture.cfg.debug_offset + i] >> 16);
         int16_t rr = (int16_t)(gNB->common_vars.debugBuff[RC.rxcapture.cfg.debug_offset + i] & 0xFFFF);
@@ -1464,5 +1505,67 @@ void *save_debugBuff_to_mat(void *args)
   free(thread_args->filename); // 释放文件名字符串
   free(thread_args->varname); // 释放变量名字符串
   free(thread_args); // 释放参数结构体本身
+  return NULL;
+}
+
+// 保存 int32_t IQ 原始数据到 .bin（格式：每个样本 4 字节，低16=I，高16=Q）
+void *save_debugBuff_to_bin(void *args)
+{
+  if (args == NULL) {
+    printf("ERROR: Thread received NULL arguments. Exiting.\n");
+    return NULL;
+  }
+
+  ThreadArgs *thread_args = (ThreadArgs *)args;
+  int32_t *buffer = thread_args->buffer;
+  int num_samples = thread_args->num_samples;
+  const char *filename = thread_args->filename;
+
+  // 参数检查（bin 不需要 varname）
+  if (buffer == NULL || num_samples <= 0 || filename == NULL) {
+    printf("Invalid parameters for BIN save\n");
+    // 释放资源，避免内存泄露
+    free(thread_args->buffer);
+    free(thread_args->filename);
+    if (thread_args->varname)
+      free(thread_args->varname);
+    free(thread_args);
+    return NULL;
+  }
+
+  FILE *fp = fopen(filename, "wb");
+  if (fp == NULL) {
+    printf("Error opening BIN file: %s\n", filename);
+    free(thread_args->buffer);
+    free(thread_args->filename);
+    if (thread_args->varname)
+      free(thread_args->varname);
+    free(thread_args);
+    return NULL;
+  }
+
+  size_t written = fwrite(buffer, sizeof(int32_t), (size_t)num_samples, fp);
+  if (written != (size_t)num_samples) {
+    printf("Error writing BIN file: %s (written=%zu expected=%d)\n", filename, written, num_samples);
+    fclose(fp);
+    free(thread_args->buffer);
+    free(thread_args->filename);
+    if (thread_args->varname)
+      free(thread_args->varname);
+    free(thread_args);
+    return NULL;
+  }
+
+  fclose(fp);
+
+  printf("IQ data successfully saved to BIN file %s (samples=%d)\n", filename, num_samples);
+
+  // 清理资源（和 mat 版本一致）
+  free(thread_args->buffer);
+  free(thread_args->filename);
+  if (thread_args->varname)
+    free(thread_args->varname); // 兼容你仍然分配了 varname 的情况
+  free(thread_args);
+
   return NULL;
 }

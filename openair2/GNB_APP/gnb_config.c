@@ -976,6 +976,7 @@ void RCconfig_NR_L1(void)
       {CONFIG_STRING_RXCAPTURE_OUTPUT_DIR, 0, .strptr = &RC.rxcapture.cfg.output_dir, .defstrval = "./", TYPE_STRING, 0},
       {CONFIG_STRING_RXCAPTURE_DEBUG_OFFSET, 0, .uptr = &RC.rxcapture.cfg.debug_offset, .defuintval = 50000, TYPE_UINT, 0},
       {CONFIG_STRING_RXCAPTURE_SNR_THRE, 0, .uptr = &RC.rxcapture.cfg.snr_thre, .defuintval = 0, TYPE_UINT, 0},
+      {CONFIG_STRING_RXCAPTURE_OUTPUT_TYPE, 0, .strptr = &RC.rxcapture.cfg.output, .defstrval = "mat", TYPE_STRING, 0},
   };
   config_get(config_get_if(), RxCaptureParams, sizeofArray(RxCaptureParams), CONFIG_STRING_RXCAPTURE_CONFIG);
   if (RC.rxcapture.cfg.enable) {
