@@ -905,7 +905,7 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
               (dB_fixed_x10(pusch_vars->ulsch_power_tot) - dB_fixed_x10(pusch_vars->ulsch_noise_power_tot)) / 10);
         if (RC.rxcapture.cfg_sig == RXCAP_MSG5) {
           int32_t snr = (dB_fixed_x10(pusch_vars->ulsch_power_tot) - dB_fixed_x10(pusch_vars->ulsch_noise_power_tot));
-          if (snr >= 200) {
+          if (snr >= RC.rxcapture.cfg.snr_thre) {
             printf("set RC.capture_flag = 1\n");
             RC.capture_flag = 1;
             gNB->common_vars.debugBuff[60000] = snr;
@@ -996,7 +996,7 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, N
                                     &gNB->srs->snr);
           if (RC.rxcapture.cfg_sig == RXCAP_SRS) {
             LOG_A(PHY, "PUSCH_SRS detected in %d.%d SNR:(%d)\n", frame_rx, slot_rx, gNB->srs->snr);
-            if (gNB->srs->snr >= 20 && slot_rx == 8) {
+            if (gNB->srs->snr >= RC.rxcapture.cfg.snr_thre / 10  && slot_rx == 8) {
               printf("set RC.capture_flag = 1\n");
               RC.capture_flag = 1;
               gNB->common_vars.debugBuff[60000] = gNB->srs->snr;

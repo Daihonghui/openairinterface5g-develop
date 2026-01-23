@@ -90,7 +90,7 @@ static int DEFBANDS[] = {7};
 static int DEFENBS[] = {0};
 static int DEFBFW[] = {0x00007fff};
 static int DEFRUTPCORES[] = {-1, -1, -1, -1};
-
+static rxcapture_sig_t parse_sig(const char *s);
 /**
  * @brief Helper define to allocate and initialize SetupRelease structures
  */
