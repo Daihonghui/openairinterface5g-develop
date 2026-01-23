@@ -913,7 +913,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
         LOG_I(NR_MAC, "[RAPROC] Received %s:\n", ra->ra_type == RA_2_STEP ? "MsgA-PUSCH" : "Msg3");
         if (RC.rxcapture.cfg_sig == RXCAP_MSG3) {
           LOG_A(NR_MAC, "SNR:%d\n", UE_scheduling_control->pusch_snrx10 / 10);
-          if ((UE_scheduling_control->pusch_snrx10 / 10) >= 15) {
+          if ((UE_scheduling_control->pusch_snrx10) >= RC.rxcapture.cfg.snr_thre) {
             printf("set RC.capture_flag = 1\n");
             RC.capture_flag = 1;
           }
