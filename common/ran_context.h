@@ -62,6 +62,7 @@ typedef struct {
   char *signal_type; // "msg3"|"msg5"|"srs"
   char *output_dir; // "./"
   uint32_t debug_offset; // 50000
+  uint32_t snr_thre;
 } rxcapture_cfg_t;
 typedef struct {
   rxcapture_cfg_t cfg;

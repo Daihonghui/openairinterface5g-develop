@@ -643,12 +643,13 @@ int main(int argc, char **argv)
   }
 
   LOG_I(PHY,
-        "[RXCAPTURE] enable=%u slot=%u type=%s out=%s offset=%u\n",
-        RC.rxcapture_cfg.enable,
-        RC.rxcapture_cfg.capture_slot,
-        RC.rxcapture_cfg.signal_type,
-        RC.rxcapture_cfg.output_dir,
-        RC.rxcapture_cfg.debug_offset);
+        "[RXCAPTURE] enable=%u slot=%u type=%s out=%s offset=%u snr_thre=%u\n ",
+        RC.rxcapture.cfg.enable,
+        RC.rxcapture.cfg.capture_slot,
+        RC.rxcapture.cfg.signal_type,
+        RC.rxcapture.cfg.output_dir,
+        RC.rxcapture.cfg.debug_offset,
+        RC.rxcapture.cfg.snr_thre);
   if (NFAPI_MODE != NFAPI_MODE_PNF) {
     int ret = create_gNB_tasks(node_type, uniqCfg);
     AssertFatal(ret == 0, "cannot create ITTI tasks\n");

@@ -630,6 +630,7 @@ typedef enum { NRRU = 0, NRL1 = 1, NRL2 = 2, NRL3 = 3, NRS1 = 4, NRlastel = 5 } 
 #define CONFIG_STRING_RXCAPTURE_SIGNAL_TYPE "signal_type" // "msg3"|"msg5"|"srs"
 #define CONFIG_STRING_RXCAPTURE_OUTPUT_DIR "output_dir" // "./"
 #define CONFIG_STRING_RXCAPTURE_DEBUG_OFFSET "debug_offset" // 50000 等
+#define CONFIG_STRING_RXCAPTURE_SNR_THRE "snr_thre" // 50000 等
 
 /*----------------------------------------------------------------------------------------------------------------------------------------------------*/
 /* Rx Capture configuration parameters indexes */

@@ -975,10 +975,26 @@ void RCconfig_NR_L1(void)
       {CONFIG_STRING_RXCAPTURE_SIGNAL_TYPE, 0, .strptr = &RC.rxcapture.cfg.signal_type, .defstrval = "msg3", TYPE_STRING, 0},
       {CONFIG_STRING_RXCAPTURE_OUTPUT_DIR, 0, .strptr = &RC.rxcapture.cfg.output_dir, .defstrval = "./", TYPE_STRING, 0},
       {CONFIG_STRING_RXCAPTURE_DEBUG_OFFSET, 0, .uptr = &RC.rxcapture.cfg.debug_offset, .defuintval = 50000, TYPE_UINT, 0},
+      {CONFIG_STRING_RXCAPTURE_SNR_THRE, 0, .uptr = &RC.rxcapture.cfg.snr_thre, .defuintval = 0, TYPE_UINT, 0},
   };
   config_get(config_get_if(), RxCaptureParams, sizeofArray(RxCaptureParams), CONFIG_STRING_RXCAPTURE_CONFIG);
-  rxcapture_sig_t rc_sig = parse_sig(RC.rxcapture.cfg.signal_type);
-  RC.rxcapture.cfg_sig = rc_sig;
+  if (RC.rxcapture.cfg.enable) {
+    rxcapture_sig_t rc_sig = parse_sig(RC.rxcapture.cfg.signal_type);
+    RC.rxcapture.cfg_sig = rc_sig;
+  } else {
+    RC.rxcapture.cfg_sig = RXCAP_NONE;
+  }
+  switch (RC.rxcapture.cfg_sig) {
+    case RXCAP_MSG3:
+      RC.rxcapture.cfg.capture_slot = 17;
+      break;
+    case RXCAP_MSG5:
+    case RXCAP_SRS:
+      RC.rxcapture.cfg.capture_slot = 8;
+      break;
+    default:
+      break;
+  }
 
   for (int j = 0; j < RC.nb_nr_L1_inst; j++) {
     PHY_VARS_gNB *gNB = RC.gNB[j];
