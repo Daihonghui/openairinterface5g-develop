@@ -75,10 +75,10 @@
 #include <openair1/PHY/NR_TRANSPORT/nr_ulsch.h>
 #include <openair1/PHY/NR_TRANSPORT/nr_dlsch.h>
 #include <PHY/NR_ESTIMATION/nr_ul_estimation.h>
-
+static time_stats_t ts_msg3; // 静态变量，自动初始化为0
 // #define USRP_DEBUG 1
 #include "executables/thread-common.h"
-
+#include "nr-softmodem-common.h"
 // #define TICK_TO_US(ts) (ts.diff)
 #define TICK_TO_US(ts) (ts.trials == 0 ? 0 : ts.diff / ts.trials)
 #define L1STATSSTRLEN 16384
@@ -247,11 +247,14 @@ static void rx_func(processingData_L1_t *info)
     // Call the scheduler
     if (RC.capture_flag) {
       if (slot_rx == RC.rxcapture.cfg.capture_slot) {
+        // start_meas(&ts_msg3); 
         printf("Calling msg3_save for %d.%d\n", frame_rx, slot_rx);
         msg3_save(gNB, frame_rx, slot_rx);
+        // stop_meas(&ts_msg3);
         // NR_COMMON_channels_t *cc = &mac->common_channels[0];
         // NR_RA_t *ra = &cc->ra[0];
         // ra->contention_resolution_timer = 0;
+        // printf("msg3_save current time: %f us\n", (double)ts_msg3.p_time / cpuf / 1000.0);
         // printf("RFF:unknown UE! %d.%d\n", frame_rx, slot_rx);
         RC.capture_flag = 0;
       }
@@ -358,7 +361,7 @@ void init_gNB_Tpool(int inst)
   // PUSCH symbols per thread need to be calculated by how many threads we have
   gNB->num_pusch_symbols_per_thread = 1;
   // ULSCH decoding threadpool
-  initTpool(get_softmodem_params()->threadPoolConfig, &gNB->threadPool, cpumeas(CPUMEAS_GETSTATE));
+  initTpool(get_softmodem_params()->threadPoolConfig, &gNB->threadPool, cpumeas(CPUMEAS_ENABLE));
   // ULSCH decoder result FIFO
   initNotifiedFIFO(&gNB->respPuschSymb);
   initNotifiedFIFO(&gNB->respDecode);
