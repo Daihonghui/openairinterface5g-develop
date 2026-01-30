@@ -34,8 +34,8 @@
 
 void *save_debugBuff_to_bin(void *args);
 void *save_debugBuff_to_mat(void *args);
-void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx);
-void prach_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx);
+void data_save_symbol(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx);
+void data_save_slot(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx);
 void nr_set_ssb_first_subcarrier(nfapi_nr_config_request_scf_t *cfg, NR_DL_FRAME_PARMS *fp);
 void phy_procedures_gNB_TX(processingData_L1tx_t *msgTx, int frame_tx, int slot_tx, int do_meas);
 int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, NR_UL_IND_t *UL_INFO);

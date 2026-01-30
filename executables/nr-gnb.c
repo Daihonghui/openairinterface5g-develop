@@ -247,8 +247,8 @@ static void rx_func(processingData_L1_t *info)
     // Call the scheduler
     if (RC.capture_flag) {
       if (RC.rxcapture.cfg.capture_slot == 0) {
-        printf("Calling prach_save for %d.%d\n", frame_rx, slot_rx);
-        prach_save(gNB, frame_rx, slot_rx);
+        printf("Calling data_save_symbol for %d.%d\n", frame_rx, slot_rx);
+        data_save_symbol(gNB, frame_rx, slot_rx);
         // stop_meas(&ts_msg3);
         // NR_COMMON_channels_t *cc = &mac->common_channels[0];
         // NR_RA_t *ra = &cc->ra[0];
@@ -258,8 +258,8 @@ static void rx_func(processingData_L1_t *info)
         RC.capture_flag = 0;
       } else if (slot_rx == RC.rxcapture.cfg.capture_slot) {
         // start_meas(&ts_msg3);
-        printf("Calling msg3_save for %d.%d\n", frame_rx, slot_rx);
-        msg3_save(gNB, frame_rx, slot_rx);
+        printf("Calling data_save_symbol for %d.%d\n", frame_rx, slot_rx);
+        data_save_symbol(gNB, frame_rx, slot_rx);
         // stop_meas(&ts_msg3);
         // NR_COMMON_channels_t *cc = &mac->common_channels[0];
         // NR_RA_t *ra = &cc->ra[0];

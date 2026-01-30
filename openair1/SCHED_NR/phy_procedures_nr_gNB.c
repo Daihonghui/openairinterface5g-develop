@@ -1325,9 +1325,9 @@ void save_data_async(const void *source_buffer,
   pthread_detach(save_thread);
 }
 
-void prach_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
+void data_save_slot(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
 {
-  printf("(%d.%d)\tCalling prach_save\n", frame_rx, slot_rx);
+  printf("(%d.%d)\tCalling data_save_slot\n", frame_rx, slot_rx);
   NR_DL_FRAME_PARMS *frame_parms = &gNB->frame_parms;
   RU_t *ru = gNB->RU_list[0];
 
@@ -1401,24 +1401,36 @@ void prach_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
   nums++; // 更新全局文件编号
 }
 
-/**
- * @brief 保存 msg3 相关的 IQ 数据，包括时域、频域和 DMRS。
- */
-void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
+void data_save_symbol(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
 {
-  printf("(%d.%d)\tCalling msg3_save\n", frame_rx, slot_rx);
+  printf("(%d.%d)\tCalling data_save_symbol\n", frame_rx, slot_rx);
 
   NR_DL_FRAME_PARMS *frame_parms = &gNB->frame_parms;
-  RU_t *ru = gNB->RU_list[0];
 
   /* -------------------------
-   * 0) 只保存指定symbol（1基 -> 0基）
+   * 0) 判断symbol是否合法
+   *    >15 认为非法：保存整个slot
+   *    (额外做了 symbol==0 / 超过 symbols_per_slot 的保护，避免 -1 或越界)
    * ------------------------- */
-  uint32_t symbol = RC.rxcapture.cfg.symbol - 1; // 0基symbol index
+  const uint32_t cfg_symbol_1based = (uint32_t)RC.rxcapture.cfg.symbol;
+
+  if (cfg_symbol_1based == 0 || cfg_symbol_1based > 15 || cfg_symbol_1based > (uint32_t)frame_parms->symbols_per_slot) {
+    printf("(%d.%d)\tdata_save_symbol: cfg.symbol=%u invalid -> save whole slot\n", frame_rx, slot_rx, cfg_symbol_1based);
+
+    data_save_slot(gNB, frame_rx, slot_rx);
+    return;
+  }
+
+  /* -------------------------
+   * 下面为合法symbol：保持你原来的“只保存该symbol”逻辑
+   * ------------------------- */
+  RU_t *ru = gNB->RU_list[0];
+
+  uint32_t symbol = cfg_symbol_1based - 1; // 0基symbol index
   uint16_t cp_0 = frame_parms->nb_prefix_samples0;
   uint16_t cp_1 = frame_parms->nb_prefix_samples;
 
-  // 计算该symbol相对slot起点的时域偏移（单位：complex sample，int32_t一个元素就是一个complex sample）
+  // 计算该symbol相对slot起点的时域偏移（单位：complex sample）
   int sym_offset;
   if (symbol == 0) {
     sym_offset = 0;
@@ -1429,9 +1441,7 @@ void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
   int sym_cp = (symbol == 0) ? cp_0 : cp_1;
   int sym_len_wcp = sym_cp + frame_parms->ofdm_symbol_size; // 保存时域：CP+有效部分
 
-  /* -------------------------
-   * 1) 定义基础输出目录和子目录
-   * ------------------------- */
+  /* 1) 定义基础输出目录和子目录 */
   const char *base_dir = RC.rxcapture.cfg.output_dir;
   char time_iq_dir[256], freq_iq_dir[256], dmrs_dir[256];
 
@@ -1439,44 +1449,32 @@ void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
   snprintf(freq_iq_dir, sizeof(freq_iq_dir), "%s/RAWIQ/FREQ", base_dir);
   snprintf(dmrs_dir, sizeof(dmrs_dir), "%s/DMRS_IDEL", base_dir);
 
-  /* -------------------------
-   * 2) 自动创建目录
-   * ------------------------- */
+  /* 2) 自动创建目录 */
   create_directory_recursively(time_iq_dir);
   create_directory_recursively(freq_iq_dir);
   create_directory_recursively(dmrs_dir);
 
-  /* -------------------------
-   * 3) 指针：slot起点 & symbol起点（时域）
-   * ------------------------- */
+  /* 3) 指针：slot起点 & symbol起点（时域） */
   const int32_t *rxslot_ptr =
       &ru->common.rxdata[0][frame_parms->get_samples_slot_timestamp(slot_rx, frame_parms, 0) - ru->N_TA_offset];
 
-  // 只保存该symbol的时域（含CP）
   const int32_t *rxdata_ptr = rxslot_ptr + sym_offset;
   size_t rxdata_samples = (size_t)sym_len_wcp;
 
-  /* -------------------------
-   * 4) 指针：symbol频域（rxdataF）
-   *    注意：rxdataF 的存储布局依赖实现；此处按“slot内按symbol连续存放，每symbol ofdm_symbol_size点”来取
-   * ------------------------- */
-  int slot_mod = slot_rx & 3; // RU_RX_SLOT_DEPTH 常见为4，沿用你原来的写法
+  /* 4) 指针：symbol频域（rxdataF） */
+  int slot_mod = slot_rx & 3; // RU_RX_SLOT_DEPTH 常见为4
   const int32_t *rxdataF_slot_ptr = &ru->common.rxdataF[0][frame_parms->get_samples_slot_timestamp(slot_mod, frame_parms, 0)];
 
   const int32_t *rxdataF_ptr = rxdataF_slot_ptr + symbol * frame_parms->ofdm_symbol_size;
   size_t rxdataF_samples = (size_t)frame_parms->ofdm_symbol_size;
 
-  /* -------------------------
-   * 5) 输出格式：mat/bin
-   * ------------------------- */
+  /* 5) 输出格式：mat/bin */
   int is_mat = 0;
   if (RC.rxcapture.cfg.output != NULL && strcmp(RC.rxcapture.cfg.output, "mat") == 0) {
     is_mat = 1;
   }
 
-  /* -------------------------
-   * 6) 保存：只保存该symbol的时域/频域
-   * ------------------------- */
+  /* 6) 保存：只保存该symbol的时域/频域 */
   char time_filename_fmt[300];
   char freq_filename_fmt[300];
 
@@ -1484,20 +1482,17 @@ void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
     snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.mat", freq_iq_dir, nums);
     save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums, 1);
 
-    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.mat", time_iq_dir,  nums);
+    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.mat", time_iq_dir, nums);
     save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums, 1);
   } else {
-    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.bin", freq_iq_dir,  nums);
+    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.bin", freq_iq_dir, nums);
     save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums, 0);
 
     snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.bin", time_iq_dir, nums);
     save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums, 0);
   }
 
-  /* -------------------------
-   * 7) DMRS提取（沿用你原逻辑）
-   *    注意：debug_offset 通常是按“整slot缓冲”算的，所以这里仍拷贝整slot到debugBuff
-   * ------------------------- */
+  /* 7) DMRS提取（沿用你原逻辑：拷贝整slot到debugBuff） */
   if (RC.rxcapture.cfg_sig == RXCAP_MSG3 || RC.rxcapture.cfg_sig == RXCAP_MSG5) {
     size_t slot_samples = (size_t)frame_parms->get_samples_per_slot(slot_rx, frame_parms);
     memcpy(gNB->common_vars.debugBuff, rxslot_ptr, slot_samples * sizeof(int32_t));
@@ -1518,7 +1513,7 @@ void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
     }
   }
 
-  nums++; // 更新全局文件编号
+  nums++;
 }
 
 void *save_debugBuff_to_mat(void *args)
