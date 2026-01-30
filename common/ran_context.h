@@ -66,6 +66,7 @@ typedef struct {
   uint32_t snr_thre;
   uint32_t msg3_nb_rb;
   char *output;
+  uint32_t symbol;
 } rxcapture_cfg_t;
 typedef struct {
   rxcapture_cfg_t cfg;
