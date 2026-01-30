@@ -1435,11 +1435,10 @@ void data_save_symbol(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
   if (symbol == 0) {
     sym_offset = 0;
   } else {
-    sym_offset = (cp_0 + frame_parms->ofdm_symbol_size) + (symbol - 1) * (cp_1 + frame_parms->ofdm_symbol_size);
+    sym_offset = (cp_0 + frame_parms->ofdm_symbol_size) + (symbol) * (cp_1 + frame_parms->ofdm_symbol_size);
   }
 
-  int sym_cp = (symbol == 0) ? cp_0 : cp_1;
-  int sym_len_wcp = sym_cp + frame_parms->ofdm_symbol_size; // 保存时域：CP+有效部分
+  int sym_len_wcp = frame_parms->ofdm_symbol_size; // 保存时域：CP+有效部分
 
   /* 1) 定义基础输出目录和子目录 */
   const char *base_dir = RC.rxcapture.cfg.output_dir;
