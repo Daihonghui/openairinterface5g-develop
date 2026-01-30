@@ -994,6 +994,8 @@ void RCconfig_NR_L1(void)
     case RXCAP_SRS:
       RC.rxcapture.cfg.capture_slot = 8;
       break;
+    case RXCAP_PRACH:
+      RC.rxcapture.cfg.capture_slot = 0;
     default:
       break;
   }
@@ -2780,5 +2782,7 @@ static rxcapture_sig_t parse_sig(const char *s)
     return RXCAP_MSG5;
   if (!strcmp(s, "srs"))
     return RXCAP_SRS;
+  if (!strcmp(s, "prach"))
+    return RXCAP_PRACH;
   return RXCAP_NONE;
 }

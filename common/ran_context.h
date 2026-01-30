@@ -54,6 +54,7 @@ typedef enum {
   RXCAP_MSG3,
   RXCAP_MSG5,
   RXCAP_SRS,
+  RXCAP_PRACH,
 } rxcapture_sig_t;
 
 typedef struct {

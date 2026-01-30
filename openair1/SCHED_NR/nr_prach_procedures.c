@@ -21,7 +21,7 @@
 
 /*! \file nr_prach_procedures.c
  * \brief Implementation of gNB prach procedures from 38.213 LTE specifications
- * \author R. Knopp, 
+ * \author R. Knopp,
  * \date 2019
  * \version 0.1
  * \company Eurecom
@@ -37,113 +37,110 @@
 #include "nfapi_pnf.h"
 #include "common/utils/LOG/log.h"
 #include "common/utils/LOG/vcd_signal_dumper.h"
-
-
+#include "ran_context.h"
 #include "assertions.h"
 
 #include <time.h>
-uint8_t get_nr_prach_duration(uint8_t prach_format){
+uint8_t get_nr_prach_duration(uint8_t prach_format)
+{
+  switch (prach_format) {
+    case 0: // format 0
+      return 0;
 
-  switch(prach_format){
+    case 1: // format 1
+      return 0;
 
-      case 0:  // format 0
-         return 0;
+    case 2: // format 2
+      return 0;
 
-      case 1:  // format 1
-         return 0;
+    case 3: // format 3
+      return 0;
 
-      case 2:  // format 2
-         return 0;
+    case 4: // format A1
+      return 2;
 
-      case 3:  // format 3
-         return 0;
+    case 5: // format A2
+      return 4;
 
-      case 4:  // format A1
-         return 2;
+    case 6: // format A3
+      return 6;
 
-      case 5:  // format A2
-         return 4;
+    case 7: // format B1
+      return 2;
 
-      case 6:  // format A3
-         return 6;
+    case 8: // format B4
+      return 12;
 
-      case 7:  // format B1
-         return 2;
+    case 9: // format C0
+      return 2;
 
-      case 8:  // format B4
-         return 12;
+    case 10: // format C2
+      return 6;
 
-      case 9:  // format C0
-         return 2;
+    case 11: // format A1/B1
+      return 2;
 
-      case 10:  // format C2
-         return 6;
+    case 12: // format A2/B2
+      return 4;
 
-      case 11:  // format A1/B1
-         return 2;
+    case 13: // format A3/B3
+      return 6;
 
-      case 12:  // format A2/B2
-         return 4;
-
-      case 13:  // format A3/B3
-         return 6;
-
-      default :
-         AssertFatal(1==0,"Invalid Prach format\n");
-         break;
-
+    default:
+      AssertFatal(1 == 0, "Invalid Prach format\n");
+      break;
   }
 }
 
 void L1_nr_prach_procedures(PHY_VARS_gNB *gNB, int frame, int slot, nfapi_nr_rach_indication_t *rach_ind)
 {
-  uint16_t max_preamble[4]={0},max_preamble_energy[4]={0},max_preamble_delay[4]={0};
+  uint16_t max_preamble[4] = {0}, max_preamble_energy[4] = {0}, max_preamble_delay[4] = {0};
 
   RU_t *ru;
-  int aa=0;
+  int aa = 0;
   int ru_aa;
 
- 
-  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_ENB_PRACH_RX,1);
+  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_ENB_PRACH_RX, 1);
   rach_ind->sfn = frame;
   rach_ind->slot = slot;
   rach_ind->number_of_pdus = 0;
 
-  ru=gNB->RU_list[0];
+  ru = gNB->RU_list[0];
 
-  int prach_id=find_nr_prach(gNB,frame,slot,SEARCH_EXIST);
+  int prach_id = find_nr_prach(gNB, frame, slot, SEARCH_EXIST);
 
-  if (prach_id>=0) {
-    LOG_D(NR_PHY,"%d.%d Got prach entry id %d\n",frame,slot,prach_id);
+  if (prach_id >= 0) {
+    LOG_D(NR_PHY, "%d.%d Got prach entry id %d\n", frame, slot, prach_id);
     nfapi_nr_prach_pdu_t *prach_pdu = &gNB->prach_vars.list[prach_id].pdu;
     uint8_t prachStartSymbol;
     uint8_t N_dur = get_nr_prach_duration(prach_pdu->prach_format);
 
-    for(int prach_oc = 0; prach_oc < prach_pdu->num_prach_ocas; prach_oc++) {
-      for (ru_aa=0,aa=0;ru_aa<ru->nb_rx;ru_aa++,aa++) {
-	gNB->prach_vars.rxsigF[aa] = ru->prach_rxsigF[prach_oc][ru_aa];
+    for (int prach_oc = 0; prach_oc < prach_pdu->num_prach_ocas; prach_oc++) {
+      for (ru_aa = 0, aa = 0; ru_aa < ru->nb_rx; ru_aa++, aa++) {
+        gNB->prach_vars.rxsigF[aa] = ru->prach_rxsigF[prach_oc][ru_aa];
       }
 
-      prachStartSymbol = prach_pdu->prach_start_symbol+prach_oc*N_dur;
-      //comment FK: the standard 38.211 section 5.3.2 has one extra term +14*N_RA_slot. This is because there prachStartSymbol is given wrt to start of the 15kHz slot or 60kHz slot. Here we work slot based, so this function is anyway only called in slots where there is PRACH. Its up to the MAC to schedule another PRACH PDU in the case there are there N_RA_slot \in {0,1}. 
+      prachStartSymbol = prach_pdu->prach_start_symbol + prach_oc * N_dur;
+      // comment FK: the standard 38.211 section 5.3.2 has one extra term +14*N_RA_slot. This is because there prachStartSymbol is
+      // given wrt to start of the 15kHz slot or 60kHz slot. Here we work slot based, so this function is anyway only called in
+      // slots where there is PRACH. Its up to the MAC to schedule another PRACH PDU in the case there are there N_RA_slot \in
+      // {0,1}.
 
-      rx_nr_prach(gNB,
-		  prach_pdu,
-		  prach_oc,
-		  frame,
-		  slot,
-		  &max_preamble[0],
-		  &max_preamble_energy[0],
-		  &max_preamble_delay[0]);
-      LOG_D(NR_PHY,"Freeing PRACH entry %d\n",prach_id);
-      free_nr_prach_entry(gNB,prach_id);
-      LOG_D(NR_PHY,"[RAPROC] Frame %d, slot %d, occasion %d (prachStartSymbol %d) : Most likely preamble %d, energy %d.%d dB delay %d (prach_energy counter %d)\n",
-	    frame,slot,prach_oc,prachStartSymbol,
-	    max_preamble[0],
-	    max_preamble_energy[0]/10,
-            max_preamble_energy[0]%10,
-	    max_preamble_delay[0],
-	    gNB->prach_energy_counter);
+      rx_nr_prach(gNB, prach_pdu, prach_oc, frame, slot, &max_preamble[0], &max_preamble_energy[0], &max_preamble_delay[0]);
+      LOG_D(NR_PHY, "Freeing PRACH entry %d\n", prach_id);
+      free_nr_prach_entry(gNB, prach_id);
+      LOG_D(NR_PHY,
+            "[RAPROC] Frame %d, slot %d, occasion %d (prachStartSymbol %d) : Most likely preamble %d, energy %d.%d dB delay %d "
+            "(prach_energy counter %d)\n",
+            frame,
+            slot,
+            prach_oc,
+            prachStartSymbol,
+            max_preamble[0],
+            max_preamble_energy[0] / 10,
+            max_preamble_energy[0] % 10,
+            max_preamble_delay[0],
+            gNB->prach_energy_counter);
 
       if ((gNB->prach_energy_counter == 100) && (max_preamble_energy[0] > gNB->measurements.prach_I0 + gNB->prach_thres)
           && (rach_ind->number_of_pdus < MAX_NUM_NR_RX_RACH_PDUS)) {
@@ -160,6 +157,12 @@ void L1_nr_prach_procedures(PHY_VARS_gNB *gNB, int frame, int slot, nfapi_nr_rac
               max_preamble_delay[0],
               prachStartSymbol,
               prach_pdu->num_ra);
+
+        if (max_preamble_energy > RC.rxcapture.cfg.snr_thre) {
+          if (RC.rxcapture.cfg_sig == RXCAP_PRACH) {
+            RC.capture_flag = 1;
+          }
+        }
 
         T(T_ENB_PHY_INITIATE_RA_PROCEDURE,
           T_INT(gNB->Mod_id),
@@ -183,10 +186,12 @@ void L1_nr_prach_procedures(PHY_VARS_gNB *gNB, int frame, int slot, nfapi_nr_rac
         ind->preamble_list[0].preamble_pwr = 0xffffffff;
         rach_ind->number_of_pdus++;
       }
-      gNB->measurements.prach_I0 = ((gNB->measurements.prach_I0*900)>>10) + ((max_preamble_energy[0]*124)>>10); 
-      if (frame==0) LOG_I(PHY,"prach_I0 = %d.%d dB\n",gNB->measurements.prach_I0/10,gNB->measurements.prach_I0%10);
-      if (gNB->prach_energy_counter < 100) gNB->prach_energy_counter++;
-    } //if prach_id>0
-  } //for NUMBER_OF_NR_PRACH_OCCASION_MAX
-  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_ENB_PRACH_RX,0);
+      gNB->measurements.prach_I0 = ((gNB->measurements.prach_I0 * 900) >> 10) + ((max_preamble_energy[0] * 124) >> 10);
+      if (frame == 0)
+        LOG_I(PHY, "prach_I0 = %d.%d dB\n", gNB->measurements.prach_I0 / 10, gNB->measurements.prach_I0 % 10);
+      if (gNB->prach_energy_counter < 100)
+        gNB->prach_energy_counter++;
+    } // if prach_id>0
+  } // for NUMBER_OF_NR_PRACH_OCCASION_MAX
+  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_ENB_PRACH_RX, 0);
 }

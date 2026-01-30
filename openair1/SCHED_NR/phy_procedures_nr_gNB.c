@@ -1325,6 +1325,82 @@ void save_data_async(const void *source_buffer,
   pthread_detach(save_thread);
 }
 
+void prach_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
+{
+  printf("(%d.%d)\tCalling prach_save\n", frame_rx, slot_rx);
+  NR_DL_FRAME_PARMS *frame_parms = &gNB->frame_parms;
+  RU_t *ru = gNB->RU_list[0];
+
+  // --- 1. 定义基础输出目录和子目录 ---
+  const char *base_dir = RC.rxcapture.cfg.output_dir;
+  char time_iq_dir[256], freq_iq_dir[256], dmrs_dir[256];
+  // char time_iq_dir[256], snr_dir[256],freq_iq_dir[256];
+
+  snprintf(time_iq_dir, sizeof(time_iq_dir), "%s/RAWIQ/TIME", base_dir);
+  snprintf(freq_iq_dir, sizeof(freq_iq_dir), "%s/RAWIQ/FREQ", base_dir);
+  snprintf(dmrs_dir, sizeof(dmrs_dir), "%s/DMRS_IDEL", base_dir);
+  // snprintf(snr_dir, sizeof(snr_dir), "%s/SNR_IDEL", base_dir);
+  // snprintf(srs_dir, sizeof(srs_dir), "%s/SRS_IDEL", base_dir);
+  // --- 2. 自动创建目录 ---
+  create_directory_recursively(time_iq_dir);
+  create_directory_recursively(freq_iq_dir);
+  create_directory_recursively(dmrs_dir);
+  // create_directory_recursively(snr_dir);
+  // create_directory_recursively(srs_dir);
+  // --- 3. 保存时域数据 (rxdata) ---
+  const int32_t *rxdata_ptr =
+      &ru->common.rxdata[0][frame_parms->get_samples_slot_timestamp(slot_rx, frame_parms, 0) - ru->N_TA_offset];
+  size_t rxdata_samples = frame_parms->get_samples_per_slot(slot_rx, frame_parms);
+  char time_filename_fmt[300];
+  char freq_filename_fmt[300];
+  const int32_t *rxdataF_ptr =
+      &ru->common.rxdataF[0][frame_parms->get_samples_slot_timestamp(slot_rx & 3, frame_parms, 0)]; // 假设从天线0开始
+  size_t rxdataF_samples = frame_parms->get_samples_per_slot(slot_rx & 3, frame_parms); // 假设大小
+  int is_mat = 0;
+  if (RC.rxcapture.cfg.output != NULL) {
+    if (strcmp(RC.rxcapture.cfg.output, "mat") == 0) {
+      is_mat = 1;
+    }
+  }
+
+  // --- 4. 保存频域数据 (rxdataF) ---
+  // 假设: rxdataF 包含了一个时隙的所有OFDM符号的频域数据
+  // 假设大小为: 14个符号 * ofdm符号大小
+  if (is_mat) {
+    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.mat", freq_iq_dir, nums);
+    save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums, 1);
+    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.mat", time_iq_dir, nums);
+    save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums, 1);
+  } else {
+    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.bin", freq_iq_dir, nums);
+    save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums, 0);
+    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.bin", time_iq_dir, nums);
+    save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums, 0);
+  }
+
+  // --- 5. 保存DMRS序列 (从时域数据中提取) ---
+  // 为了提取DMRS，我们仍然需要将时域数据复制到debugBuff中
+  if (RC.rxcapture.cfg_sig == RXCAP_MSG3 || RC.rxcapture.cfg_sig == RXCAP_MSG5) {
+    memcpy(gNB->common_vars.debugBuff, rxdata_ptr, rxdata_samples * sizeof(int32_t));
+    char filename_dmrs[300];
+    snprintf(filename_dmrs, sizeof(filename_dmrs), "%s/dmrs.txt", dmrs_dir);
+    FILE *file = fopen(filename_dmrs, "a");
+    if (file == NULL) {
+      printf("无法打开文件 %s\n", filename_dmrs);
+    } else {
+      // 从debugBuff的特定偏移量处提取数据并写入文件
+      for (int i = 0; i < gNB->frame_parms.N_RB_UL * 6; i++) {
+        // 高16 虚部 第16 real
+        int16_t ii = (int16_t)(gNB->common_vars.debugBuff[RC.rxcapture.cfg.debug_offset + i] >> 16);
+        int16_t rr = (int16_t)(gNB->common_vars.debugBuff[RC.rxcapture.cfg.debug_offset + i] & 0xFFFF);
+        fprintf(file, "%d,%d\n", rr, ii);
+      }
+      fclose(file);
+    }
+  }
+  nums++; // 更新全局文件编号
+}
+
 /**
  * @brief 保存 msg3 相关的 IQ 数据，包括时域、频域和 DMRS。
  */
