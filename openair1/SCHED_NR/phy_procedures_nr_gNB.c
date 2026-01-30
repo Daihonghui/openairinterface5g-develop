@@ -1481,17 +1481,17 @@ void msg3_save(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
   char freq_filename_fmt[300];
 
   if (is_mat) {
-    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_sym%u_%d.mat", freq_iq_dir, symbol + 1, nums);
-    save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_sym%u_%d", nums, 1);
+    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.mat", freq_iq_dir, nums);
+    save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums, 1);
 
-    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_sym%u_%d.mat", time_iq_dir, symbol + 1, nums);
-    save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_sym%u_%d", nums, 1);
+    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.mat", time_iq_dir,  nums);
+    save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums, 1);
   } else {
-    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_sym%u_%d.bin", freq_iq_dir, symbol + 1, nums);
-    save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_sym%u_%d", nums, 0);
+    snprintf(freq_filename_fmt, sizeof(freq_filename_fmt), "%s/rx_freq_%d.bin", freq_iq_dir,  nums);
+    save_data_async(rxdataF_ptr, rxdataF_samples, sizeof(int32_t), freq_filename_fmt, "rx_freq_%d", nums, 0);
 
-    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_sym%u_%d.bin", time_iq_dir, symbol + 1, nums);
-    save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_sym%u_%d", nums, 0);
+    snprintf(time_filename_fmt, sizeof(time_filename_fmt), "%s/rx_time_%d.bin", time_iq_dir, nums);
+    save_data_async(rxdata_ptr, rxdata_samples, sizeof(int32_t), time_filename_fmt, "rx_time_%d", nums, 0);
   }
 
   /* -------------------------
