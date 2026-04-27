@@ -29,7 +29,19 @@
  * @ingroup _mac
  */
 
+#include <arpa/inet.h>
+#include <ctype.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <pthread.h>
 #include <softmodem-common.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <unistd.h>
 #include "assertions.h"
 
 #include "NR_MAC_gNB/nr_mac_gNB.h"
@@ -57,6 +69,7 @@
 
 #define ENABLE_MAC_PAYLOAD_DEBUG
 #define DEBUG_gNB_SCHEDULER 1
+#define NR_RA_UDP_CONTROL_PORT 19090
 
 #include "common/ran_context.h"
 #include "nfapi/oai_integration/vendor_ext.h"
@@ -3139,6 +3152,283 @@ void nr_mac_release_ue(gNB_MAC_INST *mac, int rnti)
 
   nr_rlc_remove_ue(rnti);
   mac_remove_nr_ue(mac, rnti);
+}
+
+bool nr_mac_reject_access_by_rnti(module_id_t module_id, int CC_id, rnti_t rnti)
+{
+  if (!RC.nrmac || module_id >= RC.nb_nr_macrlc_inst || !RC.nrmac[module_id] || CC_id < 0 || CC_id >= MAX_NUM_CCs)
+    return false;
+
+  gNB_MAC_INST *mac = RC.nrmac[module_id];
+
+  NR_SCHED_LOCK(&mac->sched_lock);
+
+  NR_COMMON_channels_t *cc = &mac->common_channels[CC_id];
+  for (int i = 0; i < NR_NB_RA_PROC_MAX; i++) {
+    NR_RA_t *ra = &cc->ra[i];
+    if (ra->ra_state == nrRA_gNB_IDLE || ra->rnti != rnti)
+      continue;
+
+    LOG_W(NR_MAC, "External access rejection for RA RNTI 0x%04x at RA index %d state %s\n", rnti, i, nrra_text[ra->ra_state]);
+    NR_UE_info_t *UE = find_nr_UE(&mac->UE_info, rnti);
+    if (UE)
+      nr_mac_release_ue(mac, rnti);
+    else
+      nr_clear_ra_proc(ra);
+
+    NR_SCHED_UNLOCK(&mac->sched_lock);
+    return true;
+  }
+
+  NR_UE_info_t *UE = find_nr_UE(&mac->UE_info, rnti);
+  if (UE) {
+    LOG_W(NR_MAC, "External access rejection for established UE RNTI 0x%04x\n", rnti);
+    bool requested = nr_mac_request_release_ue(mac, rnti);
+    if (!requested)
+      nr_mac_release_ue(mac, rnti);
+
+    NR_SCHED_UNLOCK(&mac->sched_lock);
+    return true;
+  }
+
+  NR_SCHED_UNLOCK(&mac->sched_lock);
+  return false;
+}
+
+static pthread_t ra_udp_server_thread;
+static bool ra_udp_server_started;
+
+static bool ra_udp_valid_mac_context(module_id_t module_id, int CC_id)
+{
+  return RC.nrmac != NULL && module_id < RC.nb_nr_macrlc_inst && RC.nrmac[module_id] != NULL && CC_id >= 0 && CC_id < MAX_NUM_CCs;
+}
+
+static const char *ra_udp_type_name(nr_ra_type_t type)
+{
+  switch (type) {
+    case RA_4_STEP:
+      return "4-step";
+    case RA_2_STEP:
+      return "2-step";
+    default:
+      return "unknown";
+  }
+}
+
+static bool ra_udp_get_token_ulong(char **cursor, unsigned long *value)
+{
+  char *p = *cursor;
+  while (p && isspace((unsigned char)*p))
+    p++;
+  if (!p || *p == '\0')
+    return false;
+
+  errno = 0;
+  char *end = NULL;
+  unsigned long parsed = strtoul(p, &end, 0);
+  if (errno != 0 || end == p)
+    return false;
+
+  *cursor = end;
+  *value = parsed;
+  return true;
+}
+
+static size_t nr_mac_dump_ra_rnti(module_id_t module_id, int CC_id, char *buf, size_t len)
+{
+  if (!ra_udp_valid_mac_context(module_id, CC_id))
+    return snprintf(buf, len, "ERROR invalid MAC context module=%d cc=%d\n", module_id, CC_id);
+
+  gNB_MAC_INST *mac = RC.nrmac[module_id];
+  NR_SCHED_LOCK(&mac->sched_lock);
+
+  size_t used = 0;
+  int count = 0;
+  NR_COMMON_channels_t *cc = &mac->common_channels[CC_id];
+  for (int i = 0; i < NR_NB_RA_PROC_MAX && used < len; i++) {
+    NR_RA_t *ra = &cc->ra[i];
+    if (ra->ra_state == nrRA_gNB_IDLE)
+      continue;
+
+    int written = snprintf(buf + used,
+                           len - used,
+                           "RNTI module=%d cc=%d ra_index=%d state=%s rnti=0x%04x ra_rnti=0x%04x msg3=%d.%d timer=%d type=%s cfra=%d\n",
+                           module_id,
+                           CC_id,
+                           i,
+                           nrra_text[ra->ra_state],
+                           ra->rnti,
+                           ra->RA_rnti,
+                           ra->Msg3_frame,
+                           ra->Msg3_slot,
+                           ra->contention_resolution_timer,
+                           ra_udp_type_name(ra->ra_type),
+                           ra->cfra);
+    if (written < 0)
+      break;
+    size_t remaining = len - used;
+    used += (size_t)written < remaining ? (size_t)written : remaining;
+    count++;
+  }
+
+  NR_SCHED_UNLOCK(&mac->sched_lock);
+
+  if (count == 0 && used < len)
+    used += snprintf(buf + used, len - used, "NO_RNTI module=%d cc=%d\n", module_id, CC_id);
+  if (used < len)
+    used += snprintf(buf + used, len - used, "OK count=%d\n", count);
+  return used;
+}
+
+static void nr_mac_handle_ra_udp_command(char *cmd, char *reply, size_t reply_len)
+{
+  char *cursor = cmd;
+  while (isspace((unsigned char)*cursor))
+    cursor++;
+
+  if (strncasecmp(cursor, "PING", 4) == 0) {
+    cursor += 4;
+    while (isspace((unsigned char)*cursor))
+      cursor++;
+    if (*cursor != '\0') {
+      snprintf(reply, reply_len, "ERROR usage: PING\n");
+      return;
+    }
+
+    snprintf(reply, reply_len, "PONG\n");
+    return;
+  }
+
+  if (strncasecmp(cursor, "RNTI", 4) == 0 || strncasecmp(cursor, "GET_RNTI", 8) == 0) {
+    cursor += toupper((unsigned char)*cursor) == 'R' ? 4 : 8;
+    unsigned long values[2] = {0};
+    int count = 0;
+    while (count < 2 && ra_udp_get_token_ulong(&cursor, &values[count]))
+      count++;
+    while (isspace((unsigned char)*cursor))
+      cursor++;
+    if (*cursor != '\0') {
+      snprintf(reply, reply_len, "ERROR usage: RNTI [module_id cc_id]\n");
+      return;
+    }
+
+    module_id_t module_id = 0;
+    int CC_id = 0;
+    if (count == 2) {
+      module_id = (module_id_t)values[0];
+      CC_id = (int)values[1];
+    } else if (count != 0) {
+      snprintf(reply, reply_len, "ERROR usage: RNTI [module_id cc_id]\n");
+      return;
+    }
+
+    nr_mac_dump_ra_rnti(module_id, CC_id, reply, reply_len);
+    return;
+  }
+
+  if (strncasecmp(cursor, "REJECT", 6) == 0) {
+    cursor += 6;
+    unsigned long values[3] = {0};
+    int count = 0;
+    while (count < 3 && ra_udp_get_token_ulong(&cursor, &values[count]))
+      count++;
+    while (isspace((unsigned char)*cursor))
+      cursor++;
+    if (*cursor != '\0') {
+      snprintf(reply, reply_len, "ERROR usage: REJECT <rnti> | REJECT <module_id> <cc_id> <rnti>\n");
+      return;
+    }
+
+    if (count != 1 && count != 3) {
+      snprintf(reply, reply_len, "ERROR usage: REJECT <rnti> | REJECT <module_id> <cc_id> <rnti>\n");
+      return;
+    }
+
+    module_id_t module_id = 0;
+    int CC_id = 0;
+    unsigned long rnti_value = values[0];
+    if (count == 3) {
+      module_id = (module_id_t)values[0];
+      CC_id = (int)values[1];
+      rnti_value = values[2];
+    }
+    if (rnti_value == 0 || rnti_value > UINT16_MAX) {
+      snprintf(reply, reply_len, "ERROR RNTI must be in [0x0001,0xffff]\n");
+      return;
+    }
+
+    rnti_t rnti = (rnti_t)rnti_value;
+    bool rejected = nr_mac_reject_access_by_rnti(module_id, CC_id, rnti);
+    if (rejected)
+      snprintf(reply, reply_len, "OK rejected module=%d cc=%d rnti=0x%04x\n", module_id, CC_id, rnti);
+    else
+      snprintf(reply, reply_len, "NOT_FOUND module=%d cc=%d rnti=0x%04x\n", module_id, CC_id, rnti);
+    return;
+  }
+
+  snprintf(reply, reply_len, "ERROR unknown command. Use PING, RNTI or REJECT.\n");
+}
+
+static void *nr_mac_ra_udp_server(void *arg)
+{
+  int fd = socket(AF_INET, SOCK_DGRAM, 0);
+  if (fd < 0) {
+    LOG_E(NR_MAC, "Cannot create RA UDP control socket: %s\n", strerror(errno));
+    return NULL;
+  }
+
+  struct timeval timeout = {.tv_sec = 0, .tv_usec = 200000};
+  if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+    LOG_W(NR_MAC, "Cannot set RA UDP control socket timeout: %s\n", strerror(errno));
+
+  struct sockaddr_in addr = {0};
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(NR_RA_UDP_CONTROL_PORT);
+  addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+  if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    LOG_E(NR_MAC, "Cannot bind RA UDP control socket on 127.0.0.1:%d: %s\n", NR_RA_UDP_CONTROL_PORT, strerror(errno));
+    close(fd);
+    return NULL;
+  }
+
+  LOG_I(NR_MAC, "RA UDP control socket listening on 127.0.0.1:%d\n", NR_RA_UDP_CONTROL_PORT);
+
+  while (!oai_exit) {
+    char cmd[512] = {0};
+    char reply[2048] = {0};
+    struct sockaddr_in peer = {0};
+    socklen_t peer_len = sizeof(peer);
+    ssize_t n = recvfrom(fd, cmd, sizeof(cmd) - 1, 0, (struct sockaddr *)&peer, &peer_len);
+    if (n < 0) {
+      if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+        continue;
+      LOG_W(NR_MAC, "RA UDP control recvfrom failed: %s\n", strerror(errno));
+      continue;
+    }
+
+    cmd[n] = '\0';
+    nr_mac_handle_ra_udp_command(cmd, reply, sizeof(reply));
+    sendto(fd, reply, strlen(reply), 0, (struct sockaddr *)&peer, peer_len);
+  }
+
+  close(fd);
+  return NULL;
+}
+
+void nr_mac_start_ra_udp_server(void)
+{
+  if (ra_udp_server_started)
+    return;
+
+  int ret = pthread_create(&ra_udp_server_thread, NULL, nr_mac_ra_udp_server, NULL);
+  if (ret != 0) {
+    LOG_E(NR_MAC, "Cannot start RA UDP control thread: %s\n", strerror(ret));
+    return;
+  }
+
+  pthread_detach(ra_udp_server_thread);
+  ra_udp_server_started = true;
 }
 
 void nr_mac_update_timers(module_id_t module_id,

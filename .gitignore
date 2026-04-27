@@ -30,6 +30,8 @@ CMakeUserPresets.json
 cmake_targets
 *.csv
 *.md
+!docs/ra_udp_access_control.md
+!docs/oai_watchdog.md
 *.mat
 *.conf
 *.yml

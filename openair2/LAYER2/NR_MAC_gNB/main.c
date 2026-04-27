@@ -343,6 +343,7 @@ void mac_top_init_gNB(ngran_node_t node_type,
   }
 
   du_init_f1_ue_data();
+  nr_mac_start_ra_udp_server();
 
   srand48(0);
 }
